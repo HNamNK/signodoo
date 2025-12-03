@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_nk_bank_user,nk.bank user,model_nk_bank,base.group_user,1,0,0,0
+access_hr_department_code_user,hr.department.code.user,model_hr_department_code,base.group_user,1,1,0,0
+access_hr_department_code_system,hr.department.code.system,model_hr_department_code,base.group_system,1,1,1,1

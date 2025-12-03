@@ -1,0 +1,41 @@
+<odoo>
+    <data>
+
+
+        <menuitem 
+                    id="menu_hr_contract_management"
+                    name="Hợp Đồng"
+                    parent="hr.menu_hr_root"
+                    sequence="10"/> 
+        
+        <menuitem
+            id="menu_contracts_custom"
+            name="Contracts"
+            action="hr_contract.action_hr_contract"
+            parent="menu_hr_contract_management"
+            sequence="15"/>
+
+
+        <menuitem 
+                    id="menu_hr_employee_contract_create"
+                    name="Tạo Hợp Đồng Mới"
+                    parent="menu_hr_contract_management"
+                    action="action_hr_employee_contract_create"
+                    sequence="10"/> 
+    
+        <menuitem 
+                    id="menu_hr_employee_contract_recreate"
+                    name="Tái Tạo Hợp Đồng"
+                    parent="menu_hr_contract_management"
+                    action="action_hr_employee_contract_recreate"
+                    sequence="20"/>  
+
+        <menuitem id="hr_contract_type_menu"
+            name="Loại Hợp đồng"
+            parent="hr.menu_human_resources_configuration"
+            action="hr_contract_type_act_window"
+            groups="base.group_system"
+            sequence="11"/>
+
+    </data>
+</odoo>

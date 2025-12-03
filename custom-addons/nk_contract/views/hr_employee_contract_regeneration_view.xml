@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        
+        <!-- ========================================
+             EMPLOYEE LIST VIEW - CHO REGENERATE
+        ========================================= -->
+        
+        <record id="view_hr_employee_contract_regenerate_list" model="ir.ui.view">
+            <field name="name">hr.employee.contract.regenerate.list</field>
+            <field name="model">hr.employee</field>
+            <field name="arch" type="xml">
+                <list string="Nhân viên đã có hợp đồng" create="false" edit="false">
+                    <field name="name"/>
+                    <field name="work_email"/>
+                    <field name="department_id"/>
+                    <field name="job_id"/>
+                    <field name="latest_salary_policies_id" string="Chính Sách Đang Áp Dụng"/>
+                    <field name="salary_state" 
+                           widget="badge"
+                           decoration-success="salary_state == 'in_use'"
+                           decoration-warning="salary_state == 'draft'"
+                           decoration-muted="salary_state == 'used'"
+                           decoration-danger="salary_state == 'none'"/>
+                    <field name="has_active_policies" invisible="1"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ========================================
+             WIZARD EMPLOYEE LIST VIEW - CHO REGENERATE
+        ========================================= -->
+        
+        <record id="view_regenerate_wizard_employee_list" model="ir.ui.view">
+            <field name="name">regenerate.wizard.employee.list</field>
+            <field name="model">hr.employee</field>
+            <field name="arch" type="xml">
+                <list string="Danh sách nhân viên được chọn" create="false" edit="false">
+                    <field name="name"/>
+                    <field name="work_email"/>
+                    <field name="department_id"/>
+                    <field name="job_id"/>
+                    <field name="latest_salary_policies_id" string="Chính Sách"/>
+                    <field name="salary_state" 
+                           widget="badge"
+                           decoration-success="salary_state == 'in_use'"
+                           decoration-warning="salary_state == 'draft'"
+                           decoration-muted="salary_state == 'used'"
+                           decoration-danger="salary_state == 'none'"/>
+                    <field name="has_active_policies" invisible="1"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ========================================
+             WIZARD FORM VIEW - CHO REGENERATE
+        ========================================= -->
+        
+        <record id="view_contract_regenerate_wizard_form" model="ir.ui.view">
+            <field name="name">hr.employee.contract.regenerate.wizard.form</field>
+            <field name="model">hr.employee.contract.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Tái Tạo Hợp Đồng Hàng Loạt">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="employee_count" readonly="1"/> nhân viên được chọn
+                            </h1>
+                        </div>
+                        
+                        <group>
+                            <group string="Thông tin">
+                                <field name="action_type" invisible="1"/>
+                                <label for="employee_count" string="Số lượng"/>
+                                <div>
+                                    <field name="employee_count" readonly="1" class="oe_inline"/>
+                                    <span class="text-muted"> nhân viên</span>
+                                </div>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <page string="Danh Sách Nhân Viên" name="employees">
+                                <field name="employee_ids" 
+                                       readonly="1"
+                                       nolabel="1"
+                                       context="{'tree_view_ref': 'hr_salary_contract_import.view_regenerate_wizard_employee_list'}">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="work_email"/>
+                                        <field name="department_id"/>
+                                        <field name="salary_state" widget="badge"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <strong>Lưu ý:</strong>
+                            <ul class="mb-0">
+                                <li>Hợp đồng mới sẽ được tạo dựa trên chính sách lương đang áp dụng</li>
+                                <li>Thông tin department, job, structure type sẽ được kế thừa từ hợp đồng cũ</li>
+                                <li>Hợp đồng cũ vẫn được giữ lại trong hệ thống</li>
+                            </ul>
+                        </div>
+                    </sheet>
+                    
+                    <footer>
+                        <button name="action_process_contracts" 
+                                string="Tái Tạo Hợp Đồng" 
+                                type="object" 
+                                class="btn-primary"
+                                confirm="Bạn có chắc chắn muốn tái tạo hợp đồng cho các nhân viên đã chọn?"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- ========================================
+             WIZARD ACTION - CHO REGENERATE
+        ========================================= -->
+        
+        <record id="action_hr_employee_contract_regenerate_wizard" model="ir.actions.act_window">
+            <field name="name">Tái Tạo Hợp Đồng Hàng Loạt</field>
+            <field name="res_model">hr.employee.contract.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_contract_regenerate_wizard_form"/>
+            <field name="context">{'default_action_type': 'regenerate'}</field>
+        </record>
+
+        <!-- ========================================
+             SERVER ACTION - MỞ WIZARD REGENERATE
+        ========================================= -->
+        
+        <record id="action_open_contract_regenerate_wizard" model="ir.actions.server">
+            <field name="name">Tái Tạo Hợp Đồng Hàng Loạt</field>
+            <field name="model_id" ref="hr.model_hr_employee"/>
+            <field name="binding_model_id" ref="hr.model_hr_employee"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+# Kiểm tra có nhân viên nào được chọn không
+if not records:
+    raise UserError("Vui lòng chọn ít nhất một nhân viên để tái tạo hợp đồng.")
+
+# Lọc chỉ những nhân viên ĐÃ CÓ hợp đồng
+employees_with_contract = records.filtered(lambda e: e.contract_ids)
+
+if not employees_with_contract:
+    raise UserError(
+        "Không có nhân viên nào trong danh sách đã chọn ĐÃ CÓ hợp đồng.\n\n"
+        "Vui lòng sử dụng chức năng 'Tạo hợp đồng mới' cho nhân viên chưa có hợp đồng."
+    )
+
+# Tạo wizard với context
+wizard = env['hr.employee.contract.wizard'].create({
+    'employee_ids': [(6, 0, employees_with_contract.ids)],
+    'action_type': 'regenerate',
+})
+
+# Trả về action mở wizard
+action = {
+    'name': 'Tái Tạo Hợp Đồng Hàng Loạt',
+    'type': 'ir.actions.act_window',
+    'res_model': 'hr.employee.contract.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'res_id': wizard.id,
+    'context': dict(env.context, default_action_type='regenerate')
+}
+            </field>
+        </record>
+
+        <!-- ========================================
+             MAIN ACTION - DANH SÁCH NHÂN VIÊN ĐÃ CÓ HĐ
+        ========================================= -->
+        
+        <record id="action_hr_employee_contract_regenerate" model="ir.actions.act_window">
+            <field name="name">Tái Tạo Hợp Đồng</field>
+            <field name="res_model">hr.employee</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_id" ref="view_hr_employee_contract_regenerate_list"/>
+            <field name="domain">[('contract_ids', '!=', False)]</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Không có nhân viên nào có hợp đồng
+                </p>
+                <p>
+                    Chức năng này hiển thị danh sách nhân viên đã có hợp đồng lao động.
+                </p>
+                <p>
+                    Bạn có thể chọn nhiều nhân viên và sử dụng <strong>"Tái tạo hợp đồng"</strong> 
+                    để tạo hợp đồng mới với chính sách lương cập nhật.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

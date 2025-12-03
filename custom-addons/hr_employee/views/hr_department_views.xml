@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_department_form_inherit_custom_payment" model="ir.ui.view">
+            <field name="name">hr.department.form.inherit.custom.payment</field>
+            <field name="model">hr.department</field>
+            <field name="inherit_id" ref="hr.view_department_form"/>
+            <field name="arch" type="xml">
+                <field name="manager_id" position="after">
+                    <field name="department_code_partner_id" options="{'no_create': False, 'no_create_edit': False}"/>
+                    <field invisible="not department_code_partner_id" name="sequence_prefix" readonly="1"/>
+                    <field name="form_template" invisible="1"/>
+                </field>
+            </field>
+        </record>
+
+        <record id="view_department_code_form" model="ir.ui.view">
+            <field name="name">nk.department.code.form</field>
+            <field name="model">hr.department.code</field>
+            <field name="arch" type="xml">
+                <form string="Mã phòng ban">
+                    <sheet>
+                        <group>
+                            <field name="name" required="1"/>
+                            <field name="department_code" required="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_department_code_list" model="ir.ui.view">
+            <field name="name">nk.department.code.list</field>
+            <field name="model">hr.department.code</field>
+            <field name="arch" type="xml">
+                <list string="Mã phòng ban">
+                    <field name="name"/>
+                    <field name="department_code"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_department_codes" model="ir.actions.act_window">
+            <field name="name">Mã phòng ban</field>
+            <field name="res_model">hr.department.code</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                                          (0, 0, {'view_mode': 'list', 'view_id': ref('view_department_code_list')}),
+                                          (0, 0, {'view_mode': 'form', 'view_id': ref('view_department_code_form')})]"/>
+        </record>
+
+        <menuitem id="menu_department_codes"
+                  name="Mã phòng ban"
+                  parent="hr.menu_human_resources_configuration"
+                  action="action_department_codes"
+                  sequence="11"/>
+    </data>
+</odoo>

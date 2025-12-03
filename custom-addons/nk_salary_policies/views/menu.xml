@@ -1,0 +1,24 @@
+<odoo>
+    <data>
+
+        <record id="menu_hr_salary_policies_root" model="ir.ui.menu">
+            <field name="name">Chính sách lương</field>
+            <field name="action" ref="action_nk_salary_policies_batch"/>
+            <field name="sequence" eval="20"/>
+            <field name="parent_id" ref="hr.menu_hr_root" />
+        </record>
+     
+        <menuitem id="menu_salary_policies_settings_root"
+                  name="Cấu Hình Chính Sách Lương "
+                  parent="hr.menu_human_resources_configuration"
+                  sequence="50"/>
+
+        <menuitem id="menu_salary_policies_field_config"
+                  name="Cấu Hình Trường"
+                  parent="menu_salary_policies_settings_root"
+                  action="action_nk_salary_policies_field_config"
+                  sequence="30"/>
+
+        
+    </data>
+</odoo>

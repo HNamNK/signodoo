@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="nk_salary_policies_default_list" model="ir.ui.view">
+            <field name="name">nk.salary.policies.default.list</field>
+            <field name="model">nk.salary.policies</field>
+            <field name="priority">99</field>
+            <field name="arch" type="xml">
+                <list create="0" edit="0" delete="0" string="Policies">
+                    <field name="employee_name" string="Họ Tên NLĐ"/>
+                    <field name="employee_identification" string="Số CCCD"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_nk_salary_policies" model="ir.actions.act_window">
+            <field name="name">All Salary Policies</field>
+            <field name="res_model">nk.salary.policies</field>
+            <field name="view_mode">list</field>
+            <field name="target">current</field>
+            <field name="view_id" ref="nk_salary_policies_default_list"/>
+            <field name="context">{
+                'default_company_id': allowed_company_ids[0] if allowed_company_ids else company_id
+            }</field>
+            <field name="domain">[('company_id', 'in', allowed_company_ids)]</field>
+        </record>
+    </data>
+</odoo>

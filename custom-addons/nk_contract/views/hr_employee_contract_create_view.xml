@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- ========================================
+             EMPLOYEE LIST VIEW - CHO CREATE
+        ========================================= -->
+        
+        <record id="view_hr_employee_contract_create_list" model="ir.ui.view">
+            <field name="name">hr.employee.contract.create.list</field>
+            <field name="model">hr.employee</field>
+            <field name="arch" type="xml">
+                <list string="Nhân viên chưa có hợp đồng" create="false" edit="false">
+                    <field name="name"/>
+                    <field name="work_email"/>
+                    <field name="department_id"/>
+                    <field name="job_id"/>
+                    <field name="latest_salary_policies_id" string="Chính Sách Đang Áp Dụng"/>
+                    <field name="salary_state" 
+                           widget="badge"
+                           decoration-success="salary_state == 'in_use'"
+                           decoration-warning="salary_state == 'draft'"
+                           decoration-muted="salary_state == 'used'"
+                           decoration-danger="salary_state == 'none'"/>
+                    <field name="has_active_policies" invisible="1"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ========================================
+             WIZARD EMPLOYEE LIST VIEW - CHO CREATE
+        ========================================= -->
+        
+        <record id="view_create_wizard_employee_list" model="ir.ui.view">
+            <field name="name">create.wizard.employee.list</field>
+            <field name="model">hr.employee</field>
+            <field name="arch" type="xml">
+                <list string="Danh sách nhân viên được chọn" create="false" edit="false">
+                    <field name="name"/>
+                    <field name="work_email"/>
+                    <field name="department_id"/>
+                    <field name="job_id"/>
+                    <field name="latest_salary_policies_id" string="Chính Sách"/>
+                    <field name="salary_state" 
+                           widget="badge"
+                           decoration-success="salary_state == 'in_use'"
+                           decoration-warning="salary_state == 'draft'"
+                           decoration-muted="salary_state == 'used'"
+                           decoration-danger="salary_state == 'none'"/>
+                    <field name="has_active_policies" invisible="1"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ========================================
+             WIZARD FORM VIEW - CHO CREATE
+        ========================================= -->
+        
+        <record id="view_contract_create_wizard_form" model="ir.ui.view">
+            <field name="name">hr.employee.contract.create.wizard.form</field>
+            <field name="model">hr.employee.contract.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Tạo Hợp Đồng Hàng Loạt">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="employee_count" readonly="1"/> nhân viên được chọn
+                            </h1>
+                        </div>
+                        
+                        <group>
+                            <group string="Thông tin">
+                                <field name="action_type" invisible="1"/>
+                                <label for="employee_count" string="Số lượng"/>
+                                <div>
+                                    <field name="employee_count" readonly="1" class="oe_inline"/>
+                                    <span class="text-muted"> nhân viên</span>
+                                </div>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <page string="Danh Sách Nhân Viên" name="employees">
+                                <field name="employee_ids" 
+                                       readonly="1"
+                                       nolabel="1"
+                                       context="{'tree_view_ref': 'hr_salary_contract_import.view_create_wizard_employee_list'}">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="work_email"/>
+                                        <field name="department_id"/>
+                                        <field name="salary_state" widget="badge"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <strong>Lưu ý:</strong> Hệ thống sẽ tự động tạo hợp đồng cho các nhân viên 
+                            có chính sách lương đang áp dụng (trạng thái "Đang áp dụng").
+                        </div>
+                    </sheet>
+                    
+                    <footer>
+                        <button name="action_process_contracts" 
+                                string="Tạo Hợp Đồng" 
+                                type="object" 
+                                class="btn-primary"
+                                confirm="Bạn có chắc chắn muốn tạo hợp đồng cho các nhân viên đã chọn?"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- ========================================
+             WIZARD ACTION - CHO CREATE
+        ========================================= -->
+        
+        <record id="action_hr_employee_contract_create_wizard" model="ir.actions.act_window">
+            <field name="name">Tạo Hợp Đồng Hàng Loạt</field>
+            <field name="res_model">hr.employee.contract.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_contract_create_wizard_form"/>
+            <field name="context">{'default_action_type': 'create'}</field>
+        </record>
+
+        <!-- ========================================
+             SERVER ACTION - MỞ WIZARD CREATE
+        ========================================= -->
+        
+        <record id="action_open_contract_create_wizard" model="ir.actions.server">
+            <field name="name">Tạo Hợp Đồng Hàng Loạt</field>
+            <field name="model_id" ref="hr.model_hr_employee"/>
+            <field name="binding_model_id" ref="hr.model_hr_employee"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+# Kiểm tra có nhân viên nào được chọn không
+if not records:
+    raise UserError("Vui lòng chọn ít nhất một nhân viên để tạo hợp đồng.")
+
+# Lọc chỉ những nhân viên CHƯA CÓ hợp đồng
+employees_without_contract = records.filtered(lambda e: not e.contract_ids)
+
+if not employees_without_contract:
+    raise UserError(
+        "Không có nhân viên nào trong danh sách đã chọn CHƯA CÓ hợp đồng.\n\n"
+        "Vui lòng sử dụng chức năng 'Tái tạo hợp đồng' cho nhân viên đã có hợp đồng."
+    )
+
+# Tạo wizard với context
+wizard = env['hr.employee.contract.wizard'].create({
+    'employee_ids': [(6, 0, employees_without_contract.ids)],
+    'action_type': 'create',
+})
+
+# Trả về action mở wizard
+action = {
+    'name': 'Tạo Hợp Đồng Hàng Loạt',
+    'type': 'ir.actions.act_window',
+    'res_model': 'hr.employee.contract.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'res_id': wizard.id,
+    'context': dict(env.context, default_action_type='create')
+}
+            </field>
+        </record>
+
+        <!-- ========================================
+             MAIN ACTION - DANH SÁCH NHÂN VIÊN CHƯA CÓ HĐ
+        ========================================= -->
+        
+        <record id="action_hr_employee_contract_create" model="ir.actions.act_window">
+            <field name="name">Tạo Hợp Đồng Mới</field>
+            <field name="res_model">hr.employee</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_id" ref="view_hr_employee_contract_create_list"/>
+            <field name="domain">[('contract_ids', '=', False)]</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Không có nhân viên nào chưa có hợp đồng
+                </p>
+                <p>
+                    Tất cả nhân viên đều đã có hợp đồng lao động.
+                </p>
+                <p>
+                    Nếu bạn muốn tạo hợp đồng mới cho nhân viên đã có hợp đồng, 
+                    vui lòng sử dụng chức năng <strong>"Tái tạo hợp đồng"</strong>.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="view_nk_salary_policies_batch_list" model="ir.ui.view">
+        
+            <field name="name">nk.salary.policies.batch.list</field>
+            <field name="model">nk.salary.policies.batch</field>
+            <field name="arch" type="xml">
+                <list 
+                    create="1" 
+                    edit="1" 
+                    delete="1" 
+                    editable="bottom"
+                    duplicate="0" 
+                    string="Chính Sách Lương"
+                    multi_edit="1"
+                    decoration-muted="state == 'draft'"
+                    decoration-success="state == 'in_use'"
+                    decoration-danger="state == 'used'"
+                    class="nk_salary_policies_list">
+                    
+                    <field name="company_id" 
+                           string="Công ty"
+                           readonly="state != 'draft'"
+                           options="{'no_create': True}"
+                           width="200px"/>
+                    
+                    <field name="name" 
+                           string="Tên Chính Sách Lương" 
+                           required="1"
+                           readonly="state != 'draft'"
+                           width="300px"/>
+                    <field name="create_uid" 
+                            string="Người tạo" 
+                            readonly="1"
+                            optional="show"
+                            width="150px"/>
+                    
+                    <field name="create_date" 
+                           string="Ngày tạo" 
+                           readonly="1"
+                           width="150px"/>
+                    
+                    <field name="effective_date" 
+                           string="Ngày áp dụng" 
+                           readonly="1"
+                           optional="show"
+                           width="150px"/>
+                    
+                    <field name="expiration_date" 
+                           string="Ngày kết thúc" 
+                           readonly="1"
+                           optional="show"
+                           width="150px"/>
+                    
+                    <field name="total_records" 
+                           string="Tổng NV" 
+                           readonly="1"
+                           width="100px"
+                           />
+                    
+                    <field name="state" 
+                           widget="badge"
+                           decoration-muted="state == 'draft'"
+                           decoration-success="state == 'in_use'"
+                           decoration-danger="state == 'used'"
+                           width="120px"/>
+                    
+                    <button name="action_view_policies" 
+                            type="object" 
+                            string="Xem Chính Sách Lương"
+                            class="btn-primary"
+                            icon="fa-list-ul"
+                            invisible="total_records == 0"/>
+                    <button name="action_view_logs" 
+                            type="object" 
+                            string="Lịch sử thao tác"
+                            class="btn-info"
+                            icon="fa-history"/>
+                    
+                    <button name="action_import_records" 
+                            type="object" 
+                            string="Import Excel"
+                            class="btn-success"
+                            icon="fa-upload"
+                            invisible="state != 'draft' or total_records > 0"/>
+                    
+                    <button name="action_approve_batch" 
+                            type="object" 
+                            string="Áp dụng"
+                            class="btn-success"
+                            icon="fa-check"
+                            invisible="state != 'draft' or total_records == 0"
+                            confirm="Bạn có chắc muốn áp dụng chính sách này?"/>
+                    
+                    <button name="action_end_batch" 
+                            type="object" 
+                            string="Kết thúc"
+                            class="btn-danger"
+                            icon="fa-stop"
+                            invisible="state != 'in_use'"
+                            confirm="Bạn có chắc muốn kết thúc sử dụng chính sách này?"/>
+                </list>
+            </field>
+        </record>
+
+        
+        <record id="view_nk_salary_policies_batch_search" model="ir.ui.view">
+            <field name="name">nk.salary.policies.batch.search</field>
+            <field name="model">nk.salary.policies.batch</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm Chính Sách Lương">
+                    
+                    <field name="name" 
+                           string="Tên Chính Sách" 
+                           filter_domain="[('name', 'ilike', self)]"/>
+                    
+                    <field name="company_id" 
+                           string="Công ty"/>
+                    
+                    <filter string="Nháp" 
+                            name="filter_draft" 
+                            domain="[('state', '=', 'draft')]"/>
+                    
+                    <filter string="Đang áp dụng" 
+                            name="filter_in_use" 
+                            domain="[('state', '=', 'in_use')]"/>
+                    
+                    <filter string="Đã kết thúc" 
+                            name="filter_used" 
+                            domain="[('state', '=', 'used')]"/>
+                    
+                    
+                    <group expand="0" string="Nhóm theo">
+                        <filter string="Trạng thái" 
+                                name="group_state" 
+                                context="{'group_by': 'state'}"/>
+                        
+                        <filter string="Công ty" 
+                                name="group_company" 
+                                context="{'group_by': 'company_id'}"/>
+                        
+                        <filter string="Thời gian tạo" 
+                                name="group_create_month" 
+                                context="{'group_by': 'create_date:month'}"/>
+                    </group>
+                    
+                </search>
+            </field>
+        </record>
+        <record id="action_nk_salary_policies_batch" model="ir.actions.act_window">
+            <field name="name">Chính Sách Lương</field>
+            <field name="res_model">nk.salary.policies.batch</field>
+            <field name="view_mode">list</field>
+            <field name="view_id" ref="view_nk_salary_policies_batch_list"/>
+            <field name="search_view_id" ref="view_nk_salary_policies_batch_search"/>
+            <field name="target">current</field>
+            <field name="domain">[('company_id', 'in', allowed_company_ids)]</field>
+            <field name="context">{
+                'default_company_id': allowed_company_ids[0] if allowed_company_ids else company_id,
+                
+            }</field>
+        </record>
+    </data>
+</odoo>

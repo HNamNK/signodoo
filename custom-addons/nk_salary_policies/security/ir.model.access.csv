@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_nk_salary_policies_user,nk.salary.policies.user,model_nk_salary_policies,nk_salary_policies.group_salary_policies,1,1,1,1
+access_nk_salary_policies_batch_user,nk.salary.policies.batch.user,model_nk_salary_policies_batch,nk_salary_policies.group_salary_policies,1,1,1,1
+access_nk_salary_policies_field_config_user,nk.salary.policies.field.config.user,model_nk_salary_policies_field_config,nk_salary_policies.group_salary_policies,1,0,0,0
+access_nk_salary_policies_log_user,nk.salary.policies.log.user,model_nk_salary_policies_log,nk_salary_policies.group_salary_policies,1,0,0,0
+access_nk_salary_policies_admin,nk.salary.policies.admin,model_nk_salary_policies,base.group_system,1,1,1,1
+access_nk_salary_policies_batch_admin,nk.salary.policies.batch.admin,model_nk_salary_policies_batch,base.group_system,1,1,1,1
+access_nk_salary_policies_field_config_admin,nk.salary.policies.field.config.admin,model_nk_salary_policies_field_config,base.group_system,1,1,1,1
+access_nk_salary_policies_log_admin,nk.salary.policies.log.admin,model_nk_salary_policies_log,base.group_system,1,1,1,1

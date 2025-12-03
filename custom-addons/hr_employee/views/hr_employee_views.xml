@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_employee_view_form_inherit_custom" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.custom</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_country_code']" position="after">
+                <field name="attendance_pin" string="Mã chấm công"/>
+                <field name="tax_id" string="Mã số thuế"/>
+                <field name="health_insurance_number" string="Số sổ BHYT"/>
+                <field name="joining_date" string="Ngày vào làm"/>
+                <field name="official_date" string="Ngày chính thức"/>
+                <field name="referral_code" string="Mã giới thiệu"/>
+            </xpath>
+
+            <xpath expr="//field[@name='identification_id']" position="after">
+                <field name="identification" string="Số CCCD" required="1"/>
+                <field name="identification_id_issue_date" string="Ngày cấp CCCD"/>
+                <field name="identification_id_place" string="Nơi cấp CCCD"/>
+                <field name="citizen_id_front_image" widget="image" style="width: 100px; height: 100px;" string="CCCD mặt trước" options='{"zoom": true, "preview_image":"citizen_id_front_image"}'/>
+                <field name="citizen_id_back_image" widget="image" style="width: 100px; height: 100px;" string="CCCD mặt sau" options='{"zoom": true, "preview_image":"citizen_id_back_image"}'/>
+                <field name="signature" widget="image" style="width: 100px; height: 100px;" string="Chữ ký" options='{"zoom": true, "preview_image":"signature"}'/>
+                <field name="signature_filename" string="Tên file chữ ký"/>
+            </xpath>
+
+            <xpath expr="//page[@name='personal_information']/group/group[1]" position="before">
+                <group string="Thông tin cá nhân">
+                    <field name="ethnicity" string="Dân tộc"/>
+                    <field name="religion" string="Tôn giáo"/> 
+                    <field name="hometown" string="Quê quán"/>
+                    <field name="permanent_address" string="Địa chỉ thường trú"/>
+                    <field name="current_address" string="Địa chỉ tạm trú"/>
+                    <field name="education_level" string="Trình độ học vấn"/>
+                    <field name="major" string="Chuyên ngành"/>
+                    <field name="it_skill_level" string="Trình độ tin học"/>
+                    <field name="language_level" string="Trình độ ngoại ngữ"/> 
+
+                    <field name="attached_filename" invisible="1"/>
+                    <field 
+                        name="attached_file" 
+                        filename="attached_filename"
+                        accept=".png,.jpg,.jpeg,.gif,.pdf,.doc,.docx,.xls,.xlsx"
+                    />
+                    
+                    <button 
+                        name="action_preview_attached_file"
+                        type="object"
+                        string="Xem file"
+                        invisible="not attached_file"
+                        class="btn-primary ml-2"
+                    />
+
+                    <button 
+                        name="action_delete_attached_file"
+                        type="object"
+                        string="Xóa file"
+                        invisible="not attached_file"
+                        class="btn-danger ml-2"
+                    />
+                </group>
+            </xpath>
+
+            <xpath expr="//page[@name='personal_information']/group/group[1]" position="after">
+                <group string="Thông tin ngân hàng">
+                    <field name="bank_number" string="Số tài khoản ngân hàng"/>
+                    <field name="bank_org_id" string="Tên ngân hàng" options="{'no_create': True}" domain="[]" />
+                    <field name="bank_branch" string="Chi nhánh"/>
+                    <field name="bank_code" string="Mã ngân hàng" readonly="1" />
+                </group>
+            </xpath>
+        </field> 
+    </record>
+</odoo>

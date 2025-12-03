@@ -1,0 +1,42 @@
+
+
+.o_field_null_float_wrapper {
+    display: block;
+    width: 100%;
+}
+
+.o_field_null_float {
+    display: inline-block;
+    width: 100%;
+    text-align: left; }
+
+.o_field_null_float.o_input {
+    text-align: left;     padding-left: 8px;
+}
+
+.o_data_row.o_selected_row .o_field_null_float_wrapper {
+    display: block;
+}
+
+.o_list_table .o_data_row .o_field_null_float.o_input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.o_list_table .o_data_cell .o_field_null_float_wrapper {
+    min-height: 1px;
+}
+
+.o_list_view.hr_salary_policies_list .o_field_null_float,
+.o_list_view.hr_salary_policies_list .o_field_null_float.o_input {
+    text-align: left !important;
+    padding-left: 8px !important;
+}
+
+.o_list_view.hr_salary_policies_list .o_data_cell .o_field_null_float_wrapper {
+    text-align: left !important;
+}
+
+.o_list_view.hr_salary_policies_list .o_data_row.o_selected_row .o_field_null_float {
+    text-align: left !important;
+}
