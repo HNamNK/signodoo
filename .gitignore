@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 *.pyo
 odoo-venv/
+odoo-venv
 venv/
 data/
 filestore/
