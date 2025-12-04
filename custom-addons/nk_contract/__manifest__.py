@@ -2,18 +2,19 @@
     'name': 'NK Contract',
     'version': '1.0',
     'summary': 'Add Citizen ID to HR Employee',
-    'depends': ['hr'],
+    'depends': ['hr','nk_salary_policies'],
     'data': [
-        'views',
-
+        'security/ir.model.access.csv',
+        'views/contract_view.xml',
+        'views/hr_employee_contract_create_view.xml',
+        'views/hr_employee_contract_regeneration_view.xml',
+        'views/menu.xml',
+    
     ],
     'assets': {
         'web.assets_backend': [
             
-            'nk_salary_policies/static/src/css/salary_policy_list.css',
-            'nk_salary_policies/static/src/fields/null_numeric_field.js',
-            'nk_salary_policies/static/src/fields/null_numeric_field.xml',
-            'nk_salary_policies/static/src/fields/null_numeric_field.css',
+            'nk_contract/static/src/js/hide_menu.js',
 
         ],
     },

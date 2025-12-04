@@ -1,0 +1,9 @@
+
+.o_switch_company_menu_dropdown {
+    width: 650px !important;
+    
+    .dropdown-item {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+    }
+}

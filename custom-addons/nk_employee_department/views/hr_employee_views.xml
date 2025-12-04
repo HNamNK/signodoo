@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_employee_view_form_department_history" model="ir.ui.view">
+        <field name="name">hr.employee.view.form.inherit.department.history</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='public']" position="before">
+                <page name="department_history_page" string="Lịch sử phòng ban">
+                    <group>
+                        <field name="department_history_count" readonly="1"/>
+                    </group>
+                    <separator string="Lịch sử điều chuyển phòng ban"/>
+                    <field name="department_history_ids" nolabel="1">
+                        <list decoration-success="date_end == False" decoration-muted="date_end != False">  
+                            <field name="department_id" column_invisible="1"/>
+                            <field name="department_name" column_invisible="1"/>
+                            <field name="department_display" string="Phòng ban"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="duration"/>                                    
+                            <field name="status" widget="badge" decoration-success="status == 'Đang làm việc'" decoration-muted="status == 'Đã chuyển'"/>
+                            <field name="notes"/>
+                        </list>
+                        <form>
+                            <sheet>
+                                <group>
+                                    <group>
+                                        <field name="department_id" readonly="'department_name', '!=', False"/>
+                                        <field name="department_name" invisible="1"/>
+                                        <field name="department_display" readonly="1" invisible="'department_id', '!=', False"/>
+                                        <field name="date_start"/>
+                                        <field name="date_end"/>
+                                    </group>
+                                    <group>
+                                        <field name="duration"/>
+                                        <field name="status" widget="badge" decoration-success="status == 'Đang làm việc'" decoration-muted="status == 'Đã chuyển'"/>
+                                    </group>
+                                </group>
+                                <group>
+                                    <field name="notes" placeholder="Ghi chú về lần điều chuyển này..."/>
+                                </group>
+                            </sheet>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

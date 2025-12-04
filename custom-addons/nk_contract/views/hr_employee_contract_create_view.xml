@@ -15,14 +15,14 @@
                     <field name="work_email"/>
                     <field name="department_id"/>
                     <field name="job_id"/>
-                    <field name="latest_salary_policies_id" string="Chính Sách Đang Áp Dụng"/>
+                    <!-- <field name="latest_salary_policies_id" string="Chính Sách Đang Áp Dụng"/>
                     <field name="salary_state" 
                            widget="badge"
                            decoration-success="salary_state == 'in_use'"
                            decoration-warning="salary_state == 'draft'"
                            decoration-muted="salary_state == 'used'"
                            decoration-danger="salary_state == 'none'"/>
-                    <field name="has_active_policies" invisible="1"/>
+                    <field name="has_active_policies" invisible="1"/> -->
                     <field name="company_id" groups="base.group_multi_company"/>
                 </list>
             </field>
@@ -41,14 +41,6 @@
                     <field name="work_email"/>
                     <field name="department_id"/>
                     <field name="job_id"/>
-                    <field name="latest_salary_policies_id" string="Chính Sách"/>
-                    <field name="salary_state" 
-                           widget="badge"
-                           decoration-success="salary_state == 'in_use'"
-                           decoration-warning="salary_state == 'draft'"
-                           decoration-muted="salary_state == 'used'"
-                           decoration-danger="salary_state == 'none'"/>
-                    <field name="has_active_policies" invisible="1"/>
                 </list>
             </field>
         </record>
@@ -83,16 +75,9 @@
                         <notebook>
                             <page string="Danh Sách Nhân Viên" name="employees">
                                 <field name="employee_ids" 
-                                       readonly="1"
-                                       nolabel="1"
-                                       context="{'tree_view_ref': 'hr_salary_contract_import.view_create_wizard_employee_list'}">
-                                    <tree>
-                                        <field name="name"/>
-                                        <field name="work_email"/>
-                                        <field name="department_id"/>
-                                        <field name="salary_state" widget="badge"/>
-                                    </tree>
-                                </field>
+                                    readonly="1"
+                                    nolabel="1"
+                                    />
                             </page>
                         </notebook>
                         

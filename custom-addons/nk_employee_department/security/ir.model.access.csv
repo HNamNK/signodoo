@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_nk_department_history_user,nk.department.history.user,model_nk_department_history,base.group_user,1,0,0,0
+access_nk_department_history_officer,nk.department.history.officer,model_nk_department_history,hr.group_hr_user,1,1,1,0
+access_nk_department_history_manager,nk.department.history.manager,model_nk_department_history,hr.group_hr_manager,1,1,1,1

@@ -52,3 +52,23 @@
 .o_list_view.nk_salary_policies_list .o_list_table .o_resize:hover {
     opacity: 1 !important;
 }
+
+.nk_salary_policies_list {
+    width: 100% !important;
+}
+
+.nk_salary_policies_list .o_list_table {
+    width: 100% !important;
+    table-layout: auto !important;
+}
+
+.nk_salary_policies_list th,
+.nk_salary_policies_list td {
+    white-space: normal !important;
+}
+
+@media screen and (max-width: 768px) {
+    .nk_salary_policies_list {
+        overflow-x: auto !important;
+    }
+}

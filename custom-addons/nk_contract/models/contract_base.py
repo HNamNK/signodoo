@@ -22,7 +22,7 @@ class HrEmployeeContractBase(models.Model):
     def _prepare_contract_base_vals(self):
         """
         Chuẩn bị values CƠ BẢN cho contract
-        KHÔNG liên quan đến policies
+        KHÃ"NG liên quan đến policies
         
         Returns:
             dict: Base values cho hr.contract.create()
@@ -32,15 +32,21 @@ class HrEmployeeContractBase(models.Model):
         current_date = datetime.now()
         date_str = current_date.strftime('%d/%m/%Y')
         
-        # Format: [EmployeeID]-DD/MM/YYYY-HDLD-NK
-        contract_name = f"{self.id}-{date_str}-HDLD-NK"
+        # Xác định công ty: Ưu tiên công ty của employee, fallback về công ty hiện tại
+        company = self.company_id or self.env.company
+        
+        # Chuẩn hóa tên công ty: viết liền không dấu, chữ hoa
+        company_code = self._normalize_company_name(company.name)
+        
+        # Format: [EmployeeID]-DD/MM/YYYY-HDLD-[CONGTY]
+        contract_name = f"{self.id}-{date_str}-HDLD-{company_code}"
         
         base_vals = {
             'name': contract_name,
             'employee_id': self.id,
             'date_start': current_date.date(),
             'state': 'draft',
-            'company_id': self.company_id.id or self.env.company.id,
+            'company_id': company.id,
             'wage': 0.0,  # Mặc định 0, sẽ được cập nhật sau
         }
         
@@ -49,6 +55,41 @@ class HrEmployeeContractBase(models.Model):
         )
         
         return base_vals
+
+    def _normalize_company_name(self, company_name):
+        """
+        Chuẩn hóa tên công ty: viết liền không dấu, chữ hoa
+        
+        Args:
+            company_name: str - Tên công ty gốc
+            
+        Returns:
+            str - Tên công ty đã chuẩn hóa
+            
+        Examples:
+            "Nhân Kiệt" -> "NHANKIET"
+            "Công ty ABC" -> "CONGTYABC"
+            "Đại Phát" -> "DAIPHAT"
+        """
+        import unicodedata
+        
+        # Bỏ dấu tiếng Việt
+        normalized = unicodedata.normalize('NFD', company_name)
+        without_accents = ''.join(
+            char for char in normalized 
+            if unicodedata.category(char) != 'Mn'
+        )
+        
+        # Chuyển đ -> d, Đ -> D
+        without_accents = without_accents.replace('đ', 'd').replace('Đ', 'D')
+        
+        # Bỏ khoảng trắng và ký tự đặc biệt, chuyển thành chữ hoa
+        company_code = ''.join(
+            char.upper() for char in without_accents 
+            if char.isalnum()
+        )
+        
+        return company_code
     
     def _create_contract_record(self, contract_vals):
         """
@@ -59,17 +100,25 @@ class HrEmployeeContractBase(models.Model):
             
         Returns:
             hr.contract: Contract record mới tạo
+            
+        Note:
+            - Sử dụng sudo() để admin/HR manager có thể tạo contract 
+            cho bất kỳ công ty nào
+            - An toàn vì function này được gọi từ wizard có access rights
         """
         self.ensure_one()
         
-        contract = self.env['hr.contract'].create(contract_vals)
+        # Sử dụng sudo() để bypass multi-company access control
+        # Admin/HR Manager cần quyền này để quản lý toàn bộ hệ thống
+        contract = self.env['hr.contract'].sudo().create(contract_vals)
         
         _logger.info(
             f"Created contract {contract.id} ({contract.name}) "
-            f"for employee {self.name}"
+            f"for employee {self.name} in company {contract.company_id.name}"
         )
         
         return contract
+
     
     def _show_success_notification(self, contracts_created, action_type='tạo'):
         """
@@ -144,3 +193,81 @@ class HrEmployeeContractBase(models.Model):
                 'default_company_id': self.company_id.id,
             },
         }
+
+
+
+class HrEmployeeContractWizard(models.TransientModel):
+    """
+    Wizard tạo hợp đồng hàng loạt cho nhân viên
+    """
+    _name = 'hr.employee.contract.wizard'
+    _description = 'Wizard Tạo Hợp Đồng Hàng Loạt'
+    
+    # ========================================
+    # FIELDS
+    # ========================================
+    
+    employee_ids = fields.Many2many(
+        'hr.employee',
+        string='Nhân viên',
+        required=True,
+        help='Danh sách nhân viên cần tạo hợp đồng'
+    )
+    
+    employee_count = fields.Integer(
+        string='Số lượng nhân viên',
+        compute='_compute_employee_count',
+        store=True
+    )
+    
+    action_type = fields.Selection([
+        ('create', 'Tạo mới'),
+        ('recreate', 'Tái tạo'),
+    ], string='Loại thao tác', 
+       default='create',
+       required=True)
+    
+    # ========================================
+    # COMPUTE METHODS
+    # ========================================
+    
+    @api.depends('employee_ids')
+    def _compute_employee_count(self):
+        """Tính số lượng nhân viên được chọn"""
+        for wizard in self:
+            wizard.employee_count = len(wizard.employee_ids)
+    
+    # ========================================
+    # ACTION METHODS
+    # ========================================
+    
+    def action_process_contracts(self):
+        """
+        Xử lý tạo hợp đồng cho các nhân viên đã chọn
+        """
+        self.ensure_one()
+        
+        if not self.employee_ids:
+            raise UserError(_('Vui lòng chọn ít nhất một nhân viên!'))
+        
+        _logger.info(
+            f"Processing {self.action_type} contracts for "
+            f"{len(self.employee_ids)} employees"
+        )
+        
+        try:
+            if self.action_type == 'create':
+                # Gọi method tạo hợp đồng hàng loạt
+                return self.employee_ids.create_contracts_batch()
+            elif self.action_type == 'recreate':
+                # Gọi method tái tạo hợp đồng (nếu có)
+                return self.employee_ids.recreate_contracts_batch()
+            
+        except UserError as e:
+            # Re-raise UserError để hiển thị message cho user
+            raise
+        except Exception as e:
+            _logger.exception("Error processing contracts in wizard")
+            raise UserError(_(
+                'Có lỗi xảy ra khi xử lý hợp đồng:\n%s'
+            ) % str(e))
