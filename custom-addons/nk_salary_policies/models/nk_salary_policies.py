@@ -216,7 +216,12 @@ class NkSalaryPolicies(models.Model):
    
     @api.model
     def load(self, import_fields, data):
-                
+        """
+        Override load để validate và xử lý import từ Excel
+        """
+        # ========================================
+        # VALIDATE BATCH
+        # ========================================
         batch_id = self.env.context.get('default_batch_ref_id')
         if not batch_id:
             raise UserError(_("Vui lòng import từ Batch Form!"))
@@ -235,24 +240,22 @@ class NkSalaryPolicies(models.Model):
         if batch.state != 'draft':
             raise UserError(_("Chỉ có thể import vào batch ở trạng thái Nháp!"))
         
-
-
-
+        # ========================================
+        # LẤY CONFIGS VÀ MATERIALIZE
+        # ========================================
         configs = self.env["nk.salary.policies.field.config"].get_effective_fields(
             company=batch.company_id,
             user=self.env.user
         )
         
-
-
         non_materialized = configs.filtered(lambda c: not c.is_materialized)
         if non_materialized:
             _logger.info(f"🔧 Materializing {len(non_materialized)} fields trước khi import...")
             non_materialized.sudo().materialize_physical_field()
         
-
-
-
+        # ========================================
+        # MAP EXCEL NAME → TECHNICAL NAME
+        # ========================================
         mapping = {}
         for c in configs:
             if c.excel_name and c.technical_name:
@@ -268,15 +271,13 @@ class NkSalaryPolicies(models.Model):
             "batch_ref_id"
         ]
         
-
-
-
+        # ========================================
+        # VALIDATE INVALID COLUMNS
+        # ========================================
         invalid = []
         for f in import_fields:
-
             if f in SYSTEM_FIELDS or f.startswith('x_'):
                 continue
-
             if f not in mapping:
                 invalid.append(f)
         
@@ -287,9 +288,9 @@ class NkSalaryPolicies(models.Model):
                 "trong cấu hình field config.") % ", ".join(invalid)
             )
         
-
-
-
+        # ========================================
+        # CONVERT FIELDS
+        # ========================================
         new_fields = []
         for f in import_fields:
             if f in mapping:
@@ -297,10 +298,10 @@ class NkSalaryPolicies(models.Model):
             else:
                 new_fields.append(f)
         
-
-
-
-        model = self.env['ir.model'].search([('model', '=', 'nk.salary.policies')], limit=1)
+        # ========================================
+        # SYNC FIELD DESCRIPTIONS
+        # ========================================
+        model = self.env['ir.model'].search([('model', '=', 'nk.salary.policies')], limit=1)        
         IrFields = self.env['ir.model.fields'].sudo()
         
         for cfg in configs:
@@ -311,14 +312,13 @@ class NkSalaryPolicies(models.Model):
                 ], limit=1)
                 
                 if field:
-
                     if field.field_description != cfg.display_name:
                         field.write({'field_description': cfg.display_name})
                         _logger.info(f"✅ Synced field_description: {cfg.technical_name} → '{cfg.display_name}'")
         
-
-
-
+        # ========================================
+        # VALIDATE CCCD
+        # ========================================
         try:
             cccd_idx = new_fields.index("NLD_CCCD")
         except ValueError:
@@ -335,7 +335,6 @@ class NkSalaryPolicies(models.Model):
                 errors.append(f"Dòng {i}: Thiếu CCCD")
                 continue
             
-
             if cccd not in cccd_cache:
                 emp = self.env["hr.employee"].search([
                     ("identification", "=", cccd),
@@ -347,16 +346,15 @@ class NkSalaryPolicies(models.Model):
                 errors.append(f"Dòng {i}: Không tìm thấy NV có CCCD '{cccd}'")
         
         if errors:
-
             error_msg = "\n".join(errors[:20])
             if len(errors) > 20:
                 error_msg += f"\n\n... và {len(errors) - 20} lỗi khác"
             
             raise UserError(_("❌ Lỗi validation:\n\n%s") % error_msg)
         
-
-
-
+        # ========================================
+        # CLEAN DATA
+        # ========================================
         cleaned_data = []
         for row in data:
             cleaned_row = []
@@ -370,16 +368,52 @@ class NkSalaryPolicies(models.Model):
                     cleaned_row.append(cell)
             cleaned_data.append(cleaned_row)
         
-
-
-
+        # ========================================
+        # VALIDATE REQUIRED FIELDS
+        # ========================================
+        required_configs = configs.filtered(lambda c: c.required_on_import and c.technical_name)
+        
+        if required_configs:
+            required_errors = []
+            
+            # Map technical_name -> index trong new_fields
+            required_indices = {}
+            for cfg in required_configs:
+                try:
+                    idx = new_fields.index(cfg.technical_name)
+                    required_indices[cfg.technical_name] = (idx, cfg.display_name)
+                except ValueError:
+                    # Field không có trong import -> bỏ qua (user không import field này)
+                    pass
+            
+            # Validate từng row
+            for i, row in enumerate(cleaned_data, 1):
+                for tech_name, (idx, display_name) in required_indices.items():
+                    cell_value = row[idx] if idx < len(row) else None
+                    
+                    # Check empty
+                    if cell_value is None or cell_value == '' or str(cell_value).strip() == '':
+                        required_errors.append(
+                            f"Dòng {i}: Field '{display_name}' không được để trống"
+                        )
+            
+            if required_errors:
+                error_msg = "\n".join(required_errors[:30])
+                if len(required_errors) > 30:
+                    error_msg += f"\n\n... và {len(required_errors) - 30} lỗi khác"
+                
+                raise UserError(_("❌ Lỗi validation field bắt buộc:\n\n%s") % error_msg)
+        
+        # ========================================
+        # PROCEED WITH IMPORT
+        # ========================================
         _logger.info(f"📥 Importing {len(cleaned_data)} rows with fields: {new_fields}")
         
         result = super().load(new_fields, cleaned_data)
         
-
-
-
+        # ========================================
+        # POST-IMPORT PROCESSING
+        # ========================================
         created_ids = result.get("ids", [])
         if not created_ids:
             _logger.warning("⚠️ Import không tạo được record nào")
@@ -387,23 +421,24 @@ class NkSalaryPolicies(models.Model):
         
         _logger.info(f"✅ Imported {len(created_ids)} records successfully")
         
-
+        # Gán batch_ref_id và state
         self.browse(created_ids).write({
             'batch_ref_id': batch.id,
             'state': 'draft'
         })
         
+        # Lưu danh sách dynamic fields
         imported_fields = [f for f in new_fields if f.startswith("x_")]
-
+        
         if imported_fields:
             batch.write({'dynamic_field_names': ",".join(imported_fields)})
-
-
+        
+        # Generate dynamic list view
         is_module_install = (
             self.env.context.get('_import_current_module') or
             self.env.context.get('install_mode')
         )
-
+        
         if not is_module_install and imported_fields:
             _logger.info(f"🎨 Generating dynamic list view with {len(imported_fields)} fields...")
             batch._generate_dynamic_list_view(imported_fields, configs)
@@ -412,11 +447,11 @@ class NkSalaryPolicies(models.Model):
                 _logger.info("⏭️ Skipping view generation (module install mode)")
             else:
                 _logger.warning("⚠️ No dynamic fields to generate view")
-
-
+        
+        # Tạo log
         batch._create_log(
             action_type='batch_import',
             description=f"Import thành công {len(created_ids)} nhân viên - {len(imported_fields)} trường dữ liệu",
         )
-
+        
         return result

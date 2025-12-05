@@ -9,6 +9,7 @@
                     <field name="display_name" string="Tên hiển thị"/>
                     <field name="excel_name" string="Tên trong Excel"/>
                     <field name="field_type" string="Loại dữ liệu"/>
+
                     <field name="company_ids" widget="many2many_tags"/>
                     <field name="scope_display"/>
                 </list>
@@ -27,6 +28,9 @@
                         </group>
                         <group>
                             <field name="field_type" readonly="id"/>
+                            <field name="required_on_import" 
+                                widget="boolean_toggle"
+                                string="Bắt buộc khi import"/>
 
                         </group>
                         <group>

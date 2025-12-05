@@ -42,6 +42,12 @@ class NkSalaryPoliciesFieldConfig(models.Model):
     scope_display = fields.Selection([('global','Dùng chung toàn hệ thống'), ('company','Công ty riêng')],
                                      compute="_compute_scope_display", store=False, string="Phạm vi")
 
+
+    required_on_import = fields.Boolean(
+        string="Bắt buộc khi import",
+        default=False,
+        help="Nếu bật, field này không được để trống khi import Excel"
+    )
     def _is_admin(self):
         """Kiểm tra user có quyền Administrator không"""
         return self.env.user.has_group('base.group_system')
