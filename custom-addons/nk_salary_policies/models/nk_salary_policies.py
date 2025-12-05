@@ -68,6 +68,15 @@ class NkSalaryPolicies(models.Model):
        index=True,
        readonly=True)
     
+    activated_date = fields.Datetime(
+        string="Ngày Kích Hoạt",
+        readonly=True,
+        help="Ngày chính sách lương được chuyển sang trạng thái 'Đang áp dụng'",
+        index=True,
+    )
+
+
+    
     _sql_constraints = [
         ('unique_employee_batch', 
          'UNIQUE(employee_id, batch_ref_id)',
@@ -111,6 +120,11 @@ class NkSalaryPolicies(models.Model):
         
         for rec in self:
             old_values = {}
+            if vals.get('state') == 'in_use' and rec.state != 'in_use':
+                        if not rec.activated_date:  # Chỉ set 1 lần duy nhất
+                            vals['activated_date'] = fields.Datetime.now()
+                            _logger.info(f"📅 Set activated_date for policy {rec.id} of employee {rec.employee_id.name}")
+
             for field_name in vals.keys():
                 if field_name in ['write_date', 'write_uid', '__last_update']:
                     continue

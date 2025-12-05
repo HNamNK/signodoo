@@ -130,7 +130,13 @@ class HrEmployeeContractRegeneration(models.Model):
                 
                 # Bước 4: Tạo contract mới
                 contract = employee._create_contract_record(contract_vals)
-                
+
+                # Verify HĐ đã được activate
+                if contract.state != 'open':
+                    _logger.warning(
+                        f"⚠️ Contract {contract.name} created but not in 'open' state: {contract.state}"
+                    )
+
                 contracts_created.append(contract)
                 
                 _logger.info(
@@ -141,10 +147,17 @@ class HrEmployeeContractRegeneration(models.Model):
                 
             except Exception as e:
                 # Lỗi không mong đợi
+                import traceback
                 error_msg = str(e)
+                full_traceback = traceback.format_exc()
+                
                 errors.append(f"• {employee.name}: {error_msg}")
-                _logger.exception(
-                    f"✗ Unexpected error regenerating contract for {employee.name}"
+                
+                _logger.error(
+                    f"✗ Unexpected error regenerating contract for {employee.name}\n"
+                    f"Error type: {type(e).__name__}\n"
+                    f"Error message: {error_msg}\n"
+                    f"Full traceback:\n{full_traceback}"
                 )
         
         # Xử lý kết quả
