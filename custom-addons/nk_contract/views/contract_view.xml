@@ -1,35 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Inherit Form View của hr.contract -->
     <record id="hr_contract_view_form_inherit" model="ir.ui.view">
         <field name="name">hr.contract.form.inherit.salary.policies</field>
         <field name="model">hr.contract</field>
         <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
         <field name="arch" type="xml">
             
-            <!-- Thêm button vào header -->
-            <xpath expr="//header" position="inside">
-                <button name="action_view_batches" 
-                        type="object" 
-                        string="Xem Bảng Chính Sách"
-                        class="oe_stat_button" 
-                        icon="fa-table"
-                        invisible="batch_count == 0"
-                        groups="hr_contract.group_hr_contract_manager"/>
-            </xpath>
 
-            <!-- Thêm stat button vào buttonbox -->
+
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_batches" 
                         type="object" 
                         class="oe_stat_button" 
                         icon="fa-file-text-o"
                         invisible="batch_count == 0">
-                    <field name="batch_count" widget="statinfo" string="Bảng CS"/>
+                    <field name="batch_count" widget="statinfo" string="Xem Bảng Chính Sách"/>
                 </button>
             </xpath>
 
-            <!-- Thêm notebook page cho Chính Sách Lương -->
             <xpath expr="//notebook" position="inside">
                 <page string="Chính Sách Lương" name="salary_policies">
                     <group>
@@ -47,19 +35,17 @@
         </field>
     </record>
 
-    <!-- Inherit Tree View -->
-    <record id="hr_contract_view_tree_inherit" model="ir.ui.view">
-        <field name="name">hr.contract.tree.inherit.salary.policies</field>
+    <!-- <record id="hr_contract_view_list_inherit" model="ir.ui.view">
+        <field name="name">hr.contract.list.inherit.salary.policies</field>
         <field name="model">hr.contract</field>
-        <field name="inherit_id" ref="hr_contract.hr_contract_view_tree"/>
+        <field name="inherit_id" ref="hr_contract.hr_contract_view_list"/>
         <field name="arch" type="xml">
             
-            <!-- Thêm cột batch_count vào tree view -->
             <xpath expr="//field[@name='state']" position="after">
                 <field name="batch_count" string="Số Bảng CS" optional="hide"/>
             </xpath>
 
         </field>
-    </record>
+    </record> -->
 
 </odoo>

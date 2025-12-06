@@ -2,9 +2,6 @@
 <odoo>
     <data>
         
-        <!-- ========================================
-             EMPLOYEE LIST VIEW - CHO REGENERATE
-        ========================================= -->
         
         <record id="view_hr_employee_contract_regenerate_list" model="ir.ui.view">
             <field name="name">hr.employee.contract.regenerate.list</field>
@@ -20,10 +17,6 @@
                 </list>
             </field>
         </record>
-
-        <!-- ========================================
-             WIZARD EMPLOYEE LIST VIEW - CHO REGENERATE
-        ========================================= -->
         
         <record id="view_regenerate_wizard_employee_list" model="ir.ui.view">
             <field name="name">regenerate.wizard.employee.list</field>
@@ -39,9 +32,6 @@
             </field>
         </record>
 
-        <!-- ========================================
-             WIZARD FORM VIEW - CHO REGENERATE
-        ========================================= -->
         
         <record id="view_contract_regenerate_wizard_form" model="ir.ui.view">
             <field name="name">hr.employee.contract.regenerate.wizard.form</field>
@@ -97,9 +87,7 @@
             </field>
         </record>
 
-        <!-- ========================================
-             WIZARD ACTION - CHO REGENERATE
-        ========================================= -->
+
         
         <record id="action_hr_employee_contract_regenerate_wizard" model="ir.actions.act_window">
             <field name="name">Tái Tạo Hợp Đồng Hàng Loạt</field>
@@ -109,10 +97,6 @@
             <field name="view_id" ref="view_contract_regenerate_wizard_form"/>
             <field name="context">{'default_action_type': 'regenerate'}</field>
         </record>
-
-        <!-- ========================================
-             SERVER ACTION - MỞ WIZARD REGENERATE
-        ========================================= -->
         
         <record id="action_open_contract_regenerate_wizard" model="ir.actions.server">
             <field name="name">Tái Tạo Hợp Đồng Hàng Loạt</field>
@@ -152,10 +136,6 @@ action = {
 }
             </field>
         </record>
-
-        <!-- ========================================
-             MAIN ACTION - DANH SÁCH NHÂN VIÊN ĐÃ CÓ HĐ
-        ========================================= -->
         
         <record id="action_hr_employee_contract_regenerate" model="ir.actions.act_window">
             <field name="name">Tái Tạo Hợp Đồng</field>

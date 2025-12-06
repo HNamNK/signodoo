@@ -1,9 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from odoo import SUPERUSER_ID
-import logging
-
-_logger = logging.getLogger(__name__)
 
 class NkSalaryPoliciesFieldConfig(models.Model):
     _name = "nk.salary.policies.field.config"
@@ -85,7 +82,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                 
                 if field and field.field_description != rec.display_name:
                     field.write({'field_description': rec.display_name})
-                    _logger.info(f"✅ Synced field_description for {rec.technical_name}: '{rec.display_name}'")
+
         if self._is_admin() or self.env.context.get('materialize_now'):
             self.filtered(lambda r: not r.is_materialized).materialize_physical_field()
         
@@ -110,7 +107,8 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                         f"Bạn có chắc chắn muốn xóa?"
                     )
                 else:
-                    _logger.info(f"Field '{rec.display_name}' không có data, xóa an toàn")
+                    pass
+
                 model = self.env['ir.model'].search([('model', '=', 'nk.salary.policies')], limit=1)
                 if model:
                     IrModelFields.search([
@@ -165,9 +163,10 @@ class NkSalaryPoliciesFieldConfig(models.Model):
             self.env.registry.clear_caches()
             self.env.registry.setup_models(self.env.cr)
             self._cr.commit()
-            _logger.info("✅ Registry refreshed thành công sau khi cập nhật field động.")
+
         except Exception as e:
-            _logger.warning("⚠️ Lỗi khi refresh registry: %s", e)
+            passs
+
 
     def _ensure_field_exists(self, model, field_name, ttype, label):
 
@@ -185,11 +184,11 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                 'ttype': ttype,
                 'state': 'manual',
             })
-            _logger.info(f"✅ Created field '{field_name}' with label '{label}'")
+
         else:
             if field.field_description != label:
                 field.write({'field_description': label})
-                _logger.info(f"✅ Updated '{field_name}' label → '{label}'")
+
         if ttype in ('integer', 'float', 'monetary'):
             table_name = model.model.replace('.', '_')
             try:
@@ -202,4 +201,4 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                     ALTER COLUMN "{field_name}" DROP DEFAULT;
                 ''')
             except Exception as e:
-                _logger.warning(f"⚠️ Could not alter {field_name}: {e}")
+                pass

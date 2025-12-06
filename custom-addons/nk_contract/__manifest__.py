@@ -8,6 +8,7 @@
         'views/contract_view.xml',
         'views/hr_employee_contract_create_view.xml',
         'views/hr_employee_contract_regeneration_view.xml',
+        'views/types.xml',
         'views/menu.xml',
     
     ],
@@ -15,6 +16,8 @@
         'web.assets_backend': [
             
             'nk_contract/static/src/js/hide_menu.js',
+            'nk_contract/static/src/css/duration_mont.css',
+            
 
         ],
     },

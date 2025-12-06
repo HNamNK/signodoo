@@ -1,0 +1,31 @@
+/* Căn giữa TẤT CẢ header */
+.nk_contract_type_custom .o_list_table thead th {
+    text-align: center !important;
+}
+
+.nk_contract_type_custom .o_list_table thead th .o_column_title {
+    justify-content: center !important;
+}
+
+/* Căn trái TẤT CẢ data */
+.nk_contract_type_custom .o_list_table tbody td {
+    text-align: left !important;
+}
+
+/* Cột sequence giữ nguyên ở giữa */
+.nk_contract_type_custom .o_list_table tbody td.o_handle_cell {
+    text-align: center !important;
+}
+
+/* FIX: Override class o_list_number_th của duration_months */
+.nk_contract_type_custom .o_list_table thead th[data-name="duration_months"] .o_list_number_th {
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Đảm bảo container cũng căn giữa */
+.nk_contract_type_custom .o_list_table thead th[data-name="duration_months"] .o_column_title {
+    justify-content: center !important;
+    text-align: center !important;
+}

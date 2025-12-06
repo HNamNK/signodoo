@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 import logging
@@ -93,9 +92,7 @@ class HrEmployeeContractWizard(models.TransientModel):
         if not self.employee_ids:
             raise UserError(_('Vui lòng chọn ít nhất một nhân viên.'))
         
-        _logger.info(
-            f"Processing {self.action_type} for {len(self.employee_ids)} employees"
-        )
+
         
         if self.action_type == 'create':
             return self.employee_ids.create_contracts_batch()

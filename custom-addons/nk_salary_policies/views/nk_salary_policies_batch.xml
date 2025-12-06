@@ -6,7 +6,10 @@
             <field name="name">nk.salary.policies.batch.list</field>
             <field name="model">nk.salary.policies.batch</field>
             <field name="arch" type="xml">
-                <list 
+            
+                <list
+                 
+                        import="0"
                     create="1" 
                     edit="1" 
                     delete="1" 

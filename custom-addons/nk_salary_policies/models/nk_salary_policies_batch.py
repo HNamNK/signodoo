@@ -1,8 +1,5 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 class NkSalaryImportBatch(models.Model):
     _name = "nk.salary.policies.batch"
@@ -109,7 +106,7 @@ class NkSalaryImportBatch(models.Model):
         created_records = self.env['nk.salary.policies.batch']
         
         for vals in vals_list:
-            # Check nếu có batch trùng tên được tạo gần đây (trong 3 giây)
+
             if vals.get('name'):
                 duplicate = self.search([
                     ('name', '=', vals['name']),
@@ -123,11 +120,11 @@ class NkSalaryImportBatch(models.Model):
                     created_records |= duplicate
                     continue
             
-            # Tạo batch mới nếu không trùng
+
             new_record = super(NkSalaryImportBatch, self).create([vals])
             created_records |= new_record
             
-            # Tạo log
+
             new_record._create_log(
                 action_type='batch_create',
                 description=f"Tạo mới Bảng Chính Sách lương: {new_record.name}",
@@ -222,6 +219,17 @@ class NkSalaryImportBatch(models.Model):
     
     def action_view_policies(self):
         self.ensure_one()
+        
+
+        if not self.list_view_id and self.dynamic_field_names:
+            field_list = [f.strip() for f in self.dynamic_field_names.split(',') if f.strip()]
+            if field_list:
+                configs = self.env["nk.salary.policies.field.config"].get_effective_fields(
+                    company=self.company_id,
+                    user=self.env.user
+                )
+                self._generate_dynamic_list_view(field_list, configs)
+        
         domain = [
             ('batch_ref_id', '=', self.id),
             ('company_id', '=', self.company_id.id)
@@ -333,8 +341,12 @@ class NkSalaryImportBatch(models.Model):
         """
         self.ensure_one()
         
-        if self.list_view_id:
-            self.list_view_id.sudo().unlink()
+
+        old_view = self.list_view_id
+        if old_view:
+            self.write({'list_view_id': False})
+            old_view.sudo().unlink()
+        
         config_map = {c.technical_name: c for c in configs if c.technical_name}
         
         IrModelFields = self.env['ir.model.fields'].sudo()
@@ -344,6 +356,7 @@ class NkSalaryImportBatch(models.Model):
         
         if not model_id:
             raise UserError(_("Model nk.salary.policies không tồn tại"))
+        
         valid_fields = []
         for fname in field_list:
             field_exists = IrModelFields.search([
@@ -356,9 +369,11 @@ class NkSalaryImportBatch(models.Model):
                 cfg = config_map.get(fname)
                 if cfg and field_exists.field_description != cfg.display_name:
                     field_exists.write({'field_description': cfg.display_name})
-                    _logger.info(f"✅ Synced during view generation: {fname} → '{cfg.display_name}'")
+
             else:
-                _logger.warning(f"⚠️ Field {fname} not found in model, skipping from view")
+                pass
+
+        
         arch_lines = [
             '<?xml version="1.0"?>',
             '<list create="0" edit="1" delete="0" string="Policies" editable="top" class="nk_salary_policies_list">',
@@ -369,13 +384,14 @@ class NkSalaryImportBatch(models.Model):
             '           decoration-success="state == \'in_use\'" '
             '           decoration-muted="state == \'used\'"/>',
         ]
+        
         for fname in valid_fields:
             cfg = config_map.get(fname)
             
             if cfg:
                 label = cfg.display_name
                 field_type = cfg.field_type
-                _logger.info(f"🎨 Rendering field: {fname} → '{label}' (from config)")
+
             else:
                 field_obj = IrModelFields.search([
                     ('model_id', '=', model_id.id),
@@ -385,11 +401,13 @@ class NkSalaryImportBatch(models.Model):
                 if field_obj:
                     label = field_obj.field_description
                     field_type = 'float' if field_obj.ttype in ('float', 'monetary') else 'char'
-                    _logger.warning(f"⚠️ Rendering field: {fname} → '{label}' (fallback from ir.model.fields)")
+
                 else:
-                    _logger.error(f"❌ Field {fname} not found in ir.model.fields, skipping")
+
                     continue
+            
             auto_width = max(100, len(label) * 8 + 40)
+            
             if field_type in ('integer', 'float', 'monetary'):
                 arch_lines.append(
                     f'    <field name="{fname}" '
@@ -410,8 +428,9 @@ class NkSalaryImportBatch(models.Model):
         
         arch_lines.append('</list>')
         arch = '\n'.join(arch_lines)
+        
         view = self.env['ir.ui.view'].sudo().create({
-            'name': f'Bảng Chính Sách lương ID {self.id} - {self.name} ',
+            'name': f'Bảng Chính Sách lương ID {self.id} - {self.name}',
             'model': 'nk.salary.policies',
             'type': 'list',
             'arch': arch,
@@ -419,9 +438,12 @@ class NkSalaryImportBatch(models.Model):
             'priority': 1,
         })
         
+
+        self.env['ir.ui.view'].flush_model()
+        
         self.write({'list_view_id': view.id})
         
-        _logger.info(f"✅ Created dynamic list view with {len(valid_fields)} fields")        
+
 
     def write(self, vals):
         

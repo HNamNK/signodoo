@@ -2,9 +2,6 @@
 <odoo>
     <data>
         
-        <!-- ========================================
-             EMPLOYEE LIST VIEW - CHO CREATE
-        ========================================= -->
         
         <record id="view_hr_employee_contract_create_list" model="ir.ui.view">
             <field name="name">hr.employee.contract.create.list</field>
@@ -15,22 +12,13 @@
                     <field name="work_email"/>
                     <field name="department_id"/>
                     <field name="job_id"/>
-                    <!-- <field name="latest_salary_policies_id" string="Chính Sách Đang Áp Dụng"/>
-                    <field name="salary_state" 
-                           widget="badge"
-                           decoration-success="salary_state == 'in_use'"
-                           decoration-warning="salary_state == 'draft'"
-                           decoration-muted="salary_state == 'used'"
-                           decoration-danger="salary_state == 'none'"/>
-                    <field name="has_active_policies" invisible="1"/> -->
+
                     <field name="company_id" groups="base.group_multi_company"/>
                 </list>
             </field>
         </record>
 
-        <!-- ========================================
-             WIZARD EMPLOYEE LIST VIEW - CHO CREATE
-        ========================================= -->
+
         
         <record id="view_create_wizard_employee_list" model="ir.ui.view">
             <field name="name">create.wizard.employee.list</field>
@@ -45,10 +33,6 @@
             </field>
         </record>
 
-        <!-- ========================================
-             WIZARD FORM VIEW - CHO CREATE
-        ========================================= -->
-        
         <record id="view_contract_create_wizard_form" model="ir.ui.view">
             <field name="name">hr.employee.contract.create.wizard.form</field>
             <field name="model">hr.employee.contract.wizard</field>
@@ -99,10 +83,6 @@
             </field>
         </record>
 
-        <!-- ========================================
-             WIZARD ACTION - CHO CREATE
-        ========================================= -->
-        
         <record id="action_hr_employee_contract_create_wizard" model="ir.actions.act_window">
             <field name="name">Tạo Hợp Đồng Hàng Loạt</field>
             <field name="res_model">hr.employee.contract.wizard</field>
@@ -112,9 +92,6 @@
             <field name="context">{'default_action_type': 'create'}</field>
         </record>
 
-        <!-- ========================================
-             SERVER ACTION - MỞ WIZARD CREATE
-        ========================================= -->
         
         <record id="action_open_contract_create_wizard" model="ir.actions.server">
             <field name="name">Tạo Hợp Đồng Hàng Loạt</field>
@@ -155,9 +132,6 @@ action = {
             </field>
         </record>
 
-        <!-- ========================================
-             MAIN ACTION - DANH SÁCH NHÂN VIÊN CHƯA CÓ HĐ
-        ========================================= -->
         
         <record id="action_hr_employee_contract_create" model="ir.actions.act_window">
             <field name="name">Tạo Hợp Đồng Mới</field>

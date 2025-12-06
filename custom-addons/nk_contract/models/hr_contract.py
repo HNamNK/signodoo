@@ -9,8 +9,8 @@ _logger = logging.getLogger(__name__)
 class HrContract(models.Model):
     _inherit = 'hr.contract'
 
-    # XÓA field này vì không đúng cấu trúc
-    # salary_policies_ids = fields.One2many(...)
+
+
     
     batch_count = fields.Integer(
         string='Số bảng Chính Sách',
@@ -36,14 +36,14 @@ class HrContract(models.Model):
         """Đếm số batch mà nhân viên có policies in_use/used"""
         for contract in self:
             if contract.employee_id:
-                # Lấy các policies của nhân viên có state in_use hoặc used
+
                 policies = self.env['nk.salary.policies'].search([
                     ('employee_id', '=', contract.employee_id.id),
                     ('company_id', '=', contract.company_id.id),
                     ('state', 'in', ['in_use', 'used'])
                 ])
                 
-                # Đếm số batch unique
+
                 batches = policies.mapped('batch_ref_id')
                 contract.batch_count = len(batches)
             else:
@@ -74,19 +74,19 @@ class HrContract(models.Model):
                 contract.salary_policies_html = "<div class='alert alert-warning'>Chưa chọn nhân viên</div>"
                 continue
             
-            # Xác định điều kiện filter theo state của HĐ
+
             if contract.state == 'open':
-                # ===== CASE 2 & CASE 3: HĐ OPEN =====
+
                 policies = self.env['nk.salary.policies'].search([
                     ('employee_id', '=', contract.employee_id.id),
                     ('company_id', '=', contract.company_id.id),
-                    ('state', '=', 'in_use'),  # CHỈ lấy in_use
+                    ('state', '=', 'in_use'),
                     ('activated_date', '!=', False),
-                    ('activated_date', '>=', contract.create_date),  # Sau khi HĐ được tạo
+                    ('activated_date', '>=', contract.create_date),
                 ], order='activated_date desc', limit=1)
                 
                 if not policies:
-                    # CASE 3: HĐ mới chưa có CSL
+
                     contract.salary_policies_html = (
                         "<div class='alert alert-info'>"
                         "Chưa có chính sách lương áp dụng sau khi hợp đồng được tạo"
@@ -95,22 +95,22 @@ class HrContract(models.Model):
                     continue
             
             elif contract.state == 'close':
-                # ===== CASE 4, 5, 6, 7: HĐ CLOSE =====
+
                 next_contract = contract._get_next_contract()
                 
                 if next_contract:
-                    # CASE 4 & 5: Có HĐ kế tiếp → lấy CSL trong khoảng [create_date, next_create_date)
+
                     policies = self.env['nk.salary.policies'].search([
                         ('employee_id', '=', contract.employee_id.id),
                         ('company_id', '=', contract.company_id.id),
-                        ('state', 'in', ['in_use', 'used']),  # Cho phép cả used
+                        ('state', 'in', ['in_use', 'used']),
                         ('activated_date', '!=', False),
                         ('activated_date', '>=', contract.create_date),
                         ('activated_date', '<', next_contract.create_date),
                     ], order='activated_date desc', limit=1)
                     
                     if not policies:
-                        # CASE 6: HĐ close không có CSL trong lifetime
+
                         contract.salary_policies_html = (
                             "<div class='alert alert-info'>"
                             "Hợp đồng kết thúc trước khi có chính sách lương"
@@ -118,7 +118,7 @@ class HrContract(models.Model):
                         )
                         continue
                 else:
-                    # CASE 7: HĐ cuối cùng (không có HĐ kế tiếp) → lấy CSL mới nhất
+
                     policies = self.env['nk.salary.policies'].search([
                         ('employee_id', '=', contract.employee_id.id),
                         ('company_id', '=', contract.company_id.id),
@@ -136,7 +136,7 @@ class HrContract(models.Model):
                         continue
             
             else:
-                # state = draft/cancel → không hiển thị CSL
+
                 contract.salary_policies_html = (
                     "<div class='alert alert-secondary'>"
                     f"Hợp đồng đang ở trạng thái: {dict(contract._fields['state'].selection).get(contract.state)}"
@@ -144,7 +144,7 @@ class HrContract(models.Model):
                 )
                 continue
             
-            # ===== RENDER HTML cho CSL tìm được =====
+
             batch = policies.batch_ref_id
             if not batch or not batch.dynamic_field_names:
                 contract.salary_policies_html = (
@@ -152,10 +152,10 @@ class HrContract(models.Model):
                 )
                 continue
             
-            # Badge hiển thị state
+
             state_badge = self._get_policy_state_badge(policies.state)
             
-            # Render table
+
             field_names = [f.strip() for f in batch.dynamic_field_names.split(',') if f.strip()]
             configs = self.env['nk.salary.policies.field.config'].search([
                 ('technical_name', 'in', field_names)
@@ -175,7 +175,7 @@ class HrContract(models.Model):
             for cfg in configs:
                 value = getattr(policies, cfg.technical_name, False)
                 
-                # Format value
+
                 if cfg.field_type == 'float':
                     display_value = f"{value:,.2f}" if value else "0.00"
                 elif cfg.field_type == 'integer':
@@ -233,14 +233,14 @@ class HrContract(models.Model):
         if not self.employee_id:
             raise UserError(_("Hợp đồng chưa có nhân viên!"))
         
-        # Lấy các policies của nhân viên có state in_use hoặc used
+
         policies = self.env['nk.salary.policies'].search([
             ('employee_id', '=', self.employee_id.id),
             ('company_id', '=', self.company_id.id),
             ('state', 'in', ['in_use', 'used'])
         ])
         
-        # Lấy danh sách batch unique
+
         batches = policies.mapped('batch_ref_id')
         
         if not batches:
@@ -275,8 +275,8 @@ class HrContract(models.Model):
         Override để hỗ trợ bypass context
         """
         if self.env.context.get('bypass_contract_check'):
-            _logger.info(f"⚠️ Bypassing contract constraint for contracts: {self.ids}")
+
             return
         
-        # Gọi constraint gốc
+
         return super()._check_current_contract()
