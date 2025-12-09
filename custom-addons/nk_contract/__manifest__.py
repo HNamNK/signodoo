@@ -13,11 +13,10 @@
     
     ],
     'assets': {
-        'web.assets_backend': [
-            
+        'web.assets_backend': [           
             'nk_contract/static/src/js/hide_menu.js',
             'nk_contract/static/src/css/duration_mont.css',
-            
+            'nk_contract/static/src/view/buttons_contract.js',            
 
         ],
     },

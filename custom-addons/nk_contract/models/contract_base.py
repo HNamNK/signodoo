@@ -112,40 +112,21 @@ class HrEmployeeContractBase(models.Model):
 
 
     def _activate_contract(self, contract):
-        """
-        Kích hoạt hợp đồng: chuyển từ draft → open
-        Tự động đóng các HĐ cũ nếu có
-        
-        QUAN TRỌNG: Dùng SQL raw để bypass constraint Odoo
-        
-        Args:
-            contract: hr.contract record (đang ở state='draft')
-        
-        Returns:
-            bool: True nếu thành công
-        """
         self.ensure_one()
         
         if contract.state != 'draft':
-
- 
             return True
         
-
-        
+        # Đóng HĐ cũ
         old_active_contracts = self.env['hr.contract'].search([
             ('employee_id', '=', self.id),
             ('state', 'not in', ['draft', 'cancel', 'close']),
             ('id', '!=', contract.id)
         ])
         
-        
         if old_active_contracts:
             try:
                 old_ids = tuple(old_active_contracts.ids)
-                
-
-                
                 if len(old_ids) == 1:
                     query = "UPDATE hr_contract SET state = 'close' WHERE id = %s"
                     self.env.cr.execute(query, (old_ids[0],))
@@ -156,29 +137,18 @@ class HrEmployeeContractBase(models.Model):
                 old_active_contracts.invalidate_recordset(['state'])
                 self.env['hr.contract'].invalidate_model(['state'])
                 
-
-                
             except Exception as e:
-
                 raise UserError(_(
                     'Không thể đóng hợp đồng cũ của nhân viên "%s".\n'
                     'Lỗi: %s'
                 ) % (self.name, str(e)))
-        else:
-            pass
-            
-
         
+        # ===== PHẦN BỊ THIẾU - KÍCH HOẠT CONTRACT MỚI =====
         try:
-
-            
             contract.with_context(bypass_contract_check=True).write({'state': 'open'})
-            
-
             return True
             
         except Exception as e:
-
             raise UserError(_(
                 'Không thể kích hoạt hợp đồng mới cho nhân viên "%s".\n'
                 'Lỗi: %s'
@@ -250,4 +220,72 @@ class HrEmployeeContractBase(models.Model):
                 'default_employee_id': self.id,
                 'default_company_id': self.company_id.id,
             },
+        }
+ 
+    @api.model
+    def action_open_contract_create_wizard_from_selection(self, employee_ids):
+        """
+        Mở wizard tạo hợp đồng từ JS selection
+        """
+        employees = self.browse(employee_ids)
+        
+        if not employees:
+            raise UserError("Vui lòng chọn ít nhất một nhân viên để tạo hợp đồng.")
+        
+        employees_without_contract = employees.filtered(lambda e: not e.contract_ids)
+        
+        if not employees_without_contract:
+            raise UserError(
+                "Không có nhân viên nào trong danh sách đã chọn CHƯA CÓ hợp đồng.\n\n"
+                "Vui lòng sử dụng chức năng 'Tái tạo hợp đồng' cho nhân viên đã có hợp đồng."
+            )
+        
+        wizard = self.env['hr.employee.contract.wizard'].create({
+            'employee_ids': [(6, 0, employees_without_contract.ids)],
+            'action_type': 'create',
+        })
+        
+        return {
+            'name': 'Tạo Hợp Đồng Hàng Loạt',
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.employee.contract.wizard',
+            'view_mode': 'form',
+            'views': [(False, 'form')],  # ← THÊM DÒNG NÀY
+            'target': 'new',
+            'res_id': wizard.id,
+            'context': dict(self.env.context, default_action_type='create')
+        }
+
+    @api.model
+    def action_open_contract_regenerate_wizard_from_selection(self, employee_ids):
+        """
+        Mở wizard tái tạo hợp đồng từ JS selection
+        """
+        employees = self.browse(employee_ids)
+        
+        if not employees:
+            raise UserError("Vui lòng chọn ít nhất một nhân viên để tái tạo hợp đồng.")
+        
+        employees_with_contract = employees.filtered(lambda e: e.contract_ids)
+        
+        if not employees_with_contract:
+            raise UserError(
+                "Không có nhân viên nào trong danh sách đã chọn ĐÃ CÓ hợp đồng.\n\n"
+                "Vui lòng sử dụng chức năng 'Tạo hợp đồng mới' cho nhân viên chưa có hợp đồng."
+            )
+        
+        wizard = self.env['hr.employee.contract.wizard'].create({
+            'employee_ids': [(6, 0, employees_with_contract.ids)],
+            'action_type': 'regenerate',
+        })
+        
+        return {
+            'name': 'Tái Tạo Hợp Đồng Hàng Loạt',
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.employee.contract.wizard',
+            'view_mode': 'form',
+            'views': [(False, 'form')],  # ← THÊM DÒNG NÀY
+            'target': 'new',
+            'res_id': wizard.id,
+            'context': dict(self.env.context, default_action_type='regenerate')
         }

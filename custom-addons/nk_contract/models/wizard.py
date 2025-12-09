@@ -92,11 +92,16 @@ class HrEmployeeContractWizard(models.TransientModel):
         if not self.employee_ids:
             raise UserError(_('Vui lòng chọn ít nhất một nhân viên.'))
         
-
-        
+        # Gọi method xử lý
         if self.action_type == 'create':
-            return self.employee_ids.create_contracts_batch()
+            result = self.employee_ids.create_contracts_batch()
         elif self.action_type == 'regenerate':
-            return self.employee_ids.regenerate_contracts_batch()
+            result = self.employee_ids.regenerate_contracts_batch()
         else:
             raise UserError(_('Loại thao tác không hợp lệ: %s') % self.action_type)
+        
+        # Thêm action đóng wizard sau notification
+        if result and result.get('type') == 'ir.actions.client':
+            result['params']['next'] = {'type': 'ir.actions.act_window_close'}
+        
+        return result

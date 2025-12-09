@@ -7,7 +7,7 @@
             <field name="name">hr.employee.contract.regenerate.list</field>
             <field name="model">hr.employee</field>
             <field name="arch" type="xml">
-                <list string="Nhân viên đã có hợp đồng" create="false" edit="false">
+                <list string="Nhân viên đã có hợp đồng" create="false" edit="false" js_class="employee_contract_list">
                     <field name="name"/>
                     <field name="work_email"/>
                     <field name="department_id"/>
@@ -98,49 +98,13 @@
             <field name="context">{'default_action_type': 'regenerate'}</field>
         </record>
         
-        <record id="action_open_contract_regenerate_wizard" model="ir.actions.server">
-            <field name="name">Tái Tạo Hợp Đồng Hàng Loạt</field>
-            <field name="model_id" ref="hr.model_hr_employee"/>
-            <field name="binding_model_id" ref="hr.model_hr_employee"/>
-            <field name="binding_view_types">list</field>
-            <field name="state">code</field>
-            <field name="code">
-# Kiểm tra có nhân viên nào được chọn không
-if not records:
-    raise UserError("Vui lòng chọn ít nhất một nhân viên để tái tạo hợp đồng.")
 
-# Lọc chỉ những nhân viên ĐÃ CÓ hợp đồng
-employees_with_contract = records.filtered(lambda e: e.contract_ids)
-
-if not employees_with_contract:
-    raise UserError(
-        "Không có nhân viên nào trong danh sách đã chọn ĐÃ CÓ hợp đồng.\n\n"
-        "Vui lòng sử dụng chức năng 'Tạo hợp đồng mới' cho nhân viên chưa có hợp đồng."
-    )
-
-# Tạo wizard với context
-wizard = env['hr.employee.contract.wizard'].create({
-    'employee_ids': [(6, 0, employees_with_contract.ids)],
-    'action_type': 'regenerate',
-})
-
-# Trả về action mở wizard
-action = {
-    'name': 'Tái Tạo Hợp Đồng Hàng Loạt',
-    'type': 'ir.actions.act_window',
-    'res_model': 'hr.employee.contract.wizard',
-    'view_mode': 'form',
-    'target': 'new',
-    'res_id': wizard.id,
-    'context': dict(env.context, default_action_type='regenerate')
-}
-            </field>
-        </record>
         
         <record id="action_hr_employee_contract_regenerate" model="ir.actions.act_window">
             <field name="name">Tái Tạo Hợp Đồng</field>
             <field name="res_model">hr.employee</field>
             <field name="view_mode">list,form</field>
+           
             <field name="view_id" ref="view_hr_employee_contract_regenerate_list"/>
             <field name="domain">[('contract_ids', '!=', False)]</field>
             <field name="help" type="html">
@@ -156,6 +120,16 @@ action = {
                 </p>
             </field>
         </record>
-
+        <record id="view_hr_employee_contract_regenerate_list_js" model="ir.ui.view">
+            <field name="name">hr.employee.contract.regenerate.list.js</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="view_hr_employee_contract_regenerate_list"/>
+            <field name="mode">primary</field>
+            <field name="arch" type="xml">
+                <xpath expr="//list" position="attributes">
+                    <attribute name="js_class">employee_contract_list</attribute>
+                </xpath>
+            </field>
+        </record>
     </data>
 </odoo>

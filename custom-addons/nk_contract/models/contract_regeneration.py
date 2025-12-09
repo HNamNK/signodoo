@@ -116,9 +116,9 @@ class HrEmployeeContractRegeneration(models.Model):
                 contract = employee._create_contract_record(contract_vals)
 
 
-                if contract.state != 'open':
+                # if contract.state != 'open':
 
-                    contracts_created.append(contract)
+                contracts_created.append(contract)
                 
                 
             except Exception as e:
