@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2023 Dixmit
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <record model="ir.ui.view" id="sign_oca_field_form_view">
+        <field name="name">sign.oca.field.form (in sign_oca)</field>
+        <field name="model">sign.oca.field</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <!-- TODO -->
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" />
+                            <field name="field_type" />
+                            <field name="default_value" 
+                                   invisible="field_type == 'auto_fill'" />
+                        </group>
+                        
+                        <!-- Auto Fill Configuration -->
+                        <group invisible="field_type != 'auto_fill'">
+                            <separator string="Auto Fill Configuration" colspan="2"/>
+                            <field name="hr_field_selection" 
+                                   required="field_type == 'auto_fill'" />
+                            <field name="default_value" 
+                                   string="Fallback Value"
+                                   placeholder="Default value if auto fill fails" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="sign_oca_field_search_view">
+        <field name="name">sign.oca.field.search (in sign_oca)</field>
+        <field name="model">sign.oca.field</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" />
+                <field name="field_type" />
+                <separator/>
+                <filter string="Auto Fill Fields" name="auto_fill" 
+                        domain="[('field_type', '=', 'auto_fill')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Field Type" name="group_by_type" 
+                            context="{'group_by': 'field_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="sign_oca_field_tree_view">
+        <field name="name">sign.oca.field.list (in sign_oca)</field>
+        <field name="model">sign.oca.field</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" />
+                <field name="field_type" />
+                <field name="hr_field_selection" />
+            </list>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="sign_oca_field_act_window">
+        <field name="name">Fields</field>
+        <field name="res_model">sign.oca.field</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <record model="ir.ui.menu" id="sign_oca_field_menu">
+        <field name="name">Fields</field>
+        <field name="parent_id" ref="sign_oca_settings_menu" />
+        <field name="action" ref="sign_oca_field_act_window" />
+        <field name="sequence" eval="16" />
+    </record>
+</odoo>

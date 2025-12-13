@@ -9,6 +9,8 @@ odoo-venv
 venv/
 data/
 filestore/
+data/sessions/-A/
+data/sessions/-*/
 store/
 sessions/
 .vscode/
@@ -16,4 +18,4 @@ sessions/
 *.log
 .DS_Store
 odoo.conf
-EOF
+EOFdata/sessions/

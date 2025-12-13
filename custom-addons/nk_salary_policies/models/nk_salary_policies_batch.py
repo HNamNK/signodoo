@@ -74,7 +74,6 @@ class NkSalaryImportBatch(models.Model):
         copy=False, 
     )
 
-
     log_ids = fields.One2many(
         'nk.salary.policies.log',
         'batch_id',

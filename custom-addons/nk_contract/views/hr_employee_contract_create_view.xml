@@ -13,7 +13,7 @@
                     <field name="department_id"/>
                     <field name="job_id"/>
 
-                    <field name="company_id" groups="base.group_multi_company"/>
+                    <field name="company_id" />
                 </list>
             </field>
         </record>
