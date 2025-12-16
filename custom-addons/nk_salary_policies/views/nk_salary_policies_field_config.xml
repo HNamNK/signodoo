@@ -6,10 +6,9 @@
             <field name="model">nk.salary.policies.field.config</field>
             <field name="arch" type="xml">
                 <list string="Cấu hình Trường Chính sách Lương" >
-                    <field name="display_name" string="Tên hiển thị"/>
                     <field name="excel_name" string="Tên trong Excel"/>
+                    <field name="technical_name" string="Tên kỹ thuật" optional="show"/>
                     <field name="field_type" string="Loại dữ liệu"/>
-
                     <field name="company_ids" widget="many2many_tags"/>
                     <field name="scope_display"/>
                 </list>
@@ -23,15 +22,18 @@
                 <form string="Cấu hình Trường Chính sách Lương">
                     <sheet>
                         <group>
-                            <field name="display_name"/> 
-                            <field name="excel_name" readonly="id"/>
+                            <field name="excel_name" 
+                                   readonly="id"
+                                   placeholder="VD: Lương Cơ Bản, Phụ Cấp Xăng Xe..."/>
+                            <field name="technical_name" 
+                                   readonly="1"
+                                   class="text-muted"/>
                         </group>
                         <group>
                             <field name="field_type" readonly="id"/>
                             <field name="required_on_import" 
                                 widget="boolean_toggle"
                                 string="Bắt buộc khi import"/>
-
                         </group>
                         <group>
                             <field name="company_ids" 
@@ -45,12 +47,11 @@
                                 widget="badge" 
                                 groups="base.group_system"/>
                         </group>
-                        <group >
+                        <group>
                             <field name="is_materialized" 
                             groups="base.group_system"
                             readonly="1"/>
                         </group>
-                        
                     </sheet>
                 </form>
             </field>

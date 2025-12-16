@@ -111,15 +111,13 @@ class NkSalaryPolicies(models.Model):
         return super().unlink()
 
     def write(self, vals):
-        
         LogModel = self.env['nk.salary.policies.log']
         
         for rec in self:
             old_values = {}
             if vals.get('state') == 'in_use' and rec.state != 'in_use':
-                        if not rec.activated_date:
-                            vals['activated_date'] = fields.Datetime.now()
-
+                if not rec.activated_date:
+                    vals['activated_date'] = fields.Datetime.now()
 
             for field_name in vals.keys():
                 if field_name in ['write_date', 'write_uid', '__last_update']:
@@ -131,10 +129,10 @@ class NkSalaryPolicies(models.Model):
                 
                 old_val = rec[field_name]
                 
+                # ✅ FIX: Dùng display_name cho tất cả many2one
                 if field.type == 'many2one':
                     old_values[field_name] = old_val.display_name if old_val else ''
                 elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
-
                     old_values[field_name] = self._clean_number_str(old_val) if old_val else ''
                 else:
                     old_values[field_name] = old_val or ''
@@ -146,10 +144,10 @@ class NkSalaryPolicies(models.Model):
                 
                 field = self._fields.get(field_name)
                 
+                # ✅ FIX: Dùng display_name cho tất cả many2one
                 if field.type == 'many2one':
                     new_val_str = new_val.display_name if new_val else ''
                 elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
-
                     new_val_str = self._clean_number_str(new_val) if new_val else ''
                 else:
                     new_val_str = new_val or ''
@@ -159,7 +157,6 @@ class NkSalaryPolicies(models.Model):
                 if old_val_str == new_val_str:
                     continue
                 
-
                 if field_name == 'state':
                     action_type = 'policies_state_change'
                     state_labels = dict(self._fields['state'].selection)
@@ -176,7 +173,7 @@ class NkSalaryPolicies(models.Model):
                             user=self.env.user
                         )
                         config = next((c for c in configs if c.technical_name == field_name), None)
-                        field_label = config.display_name if config else field.string or field_name
+                        field_label = config.excel_name if config else field.string or field_name
                     else:
                         field_label = field.string or field_name
                     description = f"Trường '{field_label}' thay đổi: {old_display or '(trống)'} → {new_display or '(trống)'}"
@@ -295,8 +292,8 @@ class NkSalaryPolicies(models.Model):
                 ], limit=1)
                 
                 if field:
-                    if field.field_description != cfg.display_name:
-                        field.write({'field_description': cfg.display_name})
+                    if field.field_description != cfg.excel_name:
+                        field.write({'field_description': cfg.excel_name})
         
         try:
             cccd_idx = new_fields.index("unique_personal_id")
@@ -352,17 +349,17 @@ class NkSalaryPolicies(models.Model):
             for cfg in required_configs:
                 try:
                     idx = new_fields.index(cfg.technical_name)
-                    required_indices[cfg.technical_name] = (idx, cfg.display_name)
+                    required_indices[cfg.technical_name] = (idx, cfg.excel_name)
                 except ValueError:
                     pass
             
             for i, row in enumerate(cleaned_data, 1):
-                for tech_name, (idx, display_name) in required_indices.items():
+                for tech_name, (idx, excel_name) in required_indices.items():
                     cell_value = row[idx] if idx < len(row) else None
                     
                     if cell_value is None or cell_value == '' or str(cell_value).strip() == '':
                         required_errors.append(
-                            f"Dòng {i}: Field '{display_name}' không được để trống"
+                            f"Dòng {i}: Field '{excel_name}' không được để trống"
                         )
             
             if required_errors:

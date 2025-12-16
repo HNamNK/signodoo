@@ -346,7 +346,7 @@ class NkSalaryImportBatch(models.Model):
             self.write({'list_view_id': False})
             old_view.sudo().unlink()
         
-        config_map = {c.technical_name: c for c in configs if c.technical_name}
+        config_map = {c.excel_name: c for c in configs if c.excel_name}
         
         IrModelFields = self.env['ir.model.fields'].sudo()
         model_id = self.env['ir.model'].sudo().search([
@@ -507,7 +507,7 @@ class NkSalaryImportBatch(models.Model):
                             company=rec.company_id,
                             user=self.env.user
                         )
-                        config = next((c for c in configs if c.technical_name == field_name), None)
+                        config = next((c for c in configs if c.excel_name == field_name), None)
                         field_label = config.display_name if config else field.string or field_name
                     else:
                         field_label = field.string or field_name
@@ -546,17 +546,17 @@ class NkSalaryImportBatch(models.Model):
         if not field_names_str:
             return ''
         
-        technical_names = [f.strip() for f in field_names_str.split(',') if f.strip()]
+        excel_names = [f.strip() for f in field_names_str.split(',') if f.strip()]
         
-        if not technical_names:
+        if not excel_names:
             return ''
         configs = self.env["nk.salary.policies.field.config"].get_effective_fields(
             company=self.company_id,
             user=self.env.user
         )
-        config_map = {c.technical_name: c.display_name for c in configs if c.technical_name}
+        config_map = {c.excel_name: c.display_name for c in configs if c.excel_name}
         display_names = []
-        for tech_name in technical_names:
+        for tech_name in excel_names:
             display_name = config_map.get(tech_name, tech_name)
             display_names.append(display_name)
         
