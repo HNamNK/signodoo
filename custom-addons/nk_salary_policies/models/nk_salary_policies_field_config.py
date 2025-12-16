@@ -89,11 +89,12 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         return res
 
     def unlink(self):
-        
         IrModelFields = self.env['ir.model.fields']
+        IrUiView = self.env['ir.ui.view'].sudo()
         
         for rec in self:
             if rec.is_materialized and rec.technical_name:
+                # Kiểm tra xem field có dữ liệu không
                 has_data = self.env['nk.salary.policies'].search_count([
                     (rec.technical_name, '!=', False),
                     (rec.technical_name, '!=', 0),
@@ -106,19 +107,44 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                         f"Xóa field sẽ MẤT TOÀN BỘ {has_data} giá trị này!\n\n"
                         f"Bạn có chắc chắn muốn xóa?"
                     )
-                else:
-                    pass
-
+                
+                # Bước 1: Tìm tất cả views chứa field này
+                views_with_field = IrUiView.search([
+                    ('model', '=', 'nk.salary.policies'),
+                    ('type', '=', 'list'),
+                    ('arch_db', 'ilike', f'field name="{rec.technical_name}"')
+                ])
+                
+                if views_with_field:
+                    # Xóa reference trong batch trước khi xóa view
+                    batches = self.env['nk.salary.policies.batch'].search([
+                        ('list_view_id', 'in', views_with_field.ids)
+                    ])
+                    
+                    if batches:
+                        batches.write({'list_view_id': False})
+                    
+                    # Xóa tất cả views chứa field này
+                    views_with_field.unlink()
+                
+                # Bước 2: Xóa ir.model.fields
                 model = self.env['ir.model'].search([('model', '=', 'nk.salary.policies')], limit=1)
                 if model:
-                    IrModelFields.search([
+                    field_to_delete = IrModelFields.search([
                         ('model_id', '=', model.id),
                         ('name', '=', rec.technical_name),
                         ('state', '=', 'manual'),
-                    ]).unlink()
+                    ])
+                    
+                    if field_to_delete:
+                        field_to_delete.unlink()
 
+        # Bước 3: Xóa config record
         res = super().unlink()
+        
+        # Bước 4: Refresh registry để Odoo cập nhật model
         self._refresh_registry()
+        
         return res
     @api.model
     def get_effective_fields(self, company=None, user=None):
@@ -165,7 +191,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
             self._cr.commit()
 
         except Exception as e:
-            passs
+            pass
 
 
     def _ensure_field_exists(self, model, field_name, ttype, label):
