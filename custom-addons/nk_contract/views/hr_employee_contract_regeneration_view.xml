@@ -41,7 +41,7 @@
                     <sheet>
                         <div class="oe_title">
                             <h1>
-                                <field name="employee_count" readonly="1"/> nhân viên được chọn
+                                <field name="employee_count" /> nhân viên được chọn
                             </h1>
                         </div>
                         
@@ -50,7 +50,7 @@
                                 <field name="action_type" invisible="1"/>
                                 <label for="employee_count" string="Số lượng"/>
                                 <div>
-                                    <field name="employee_count" readonly="1" class="oe_inline"/>
+                                    <field name="employee_count"  class="oe_inline"/>
                                     <span class="text-muted"> nhân viên</span>
                                 </div>
                             </group>
@@ -59,7 +59,7 @@
                         <notebook>
                             <page string="Danh Sách Nhân Viên" name="employees">
                                 <field name="employee_ids" 
-                                    readonly="1"
+                                    
                                     nolabel="1"
                                     />
                             </page>
@@ -106,7 +106,15 @@
             <field name="view_mode">list,form</field>
            
             <field name="view_id" ref="view_hr_employee_contract_regenerate_list"/>
-            <field name="domain">[('contract_ids', '!=', False)]</field>
+
+            <field name="domain">[
+                ('contract_ids', '!=', False),
+                '|',
+                    ('company_id', '=', False),
+                    ('company_id', 'in', allowed_company_ids)
+            ]</field>
+            <field name="context">{}</field>
+
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     Không có nhân viên nào có hợp đồng

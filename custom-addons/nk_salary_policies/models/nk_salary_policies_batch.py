@@ -80,10 +80,7 @@ class NkSalaryImportBatch(models.Model):
         string='Logs',
     )
 
-    batch_log_count = fields.Integer(
-        string='Số log Batch',
-        compute='_compute_log_counts',
-    )
+
 
     record_log_count = fields.Integer(
         string='Số log Record',
@@ -123,11 +120,6 @@ class NkSalaryImportBatch(models.Model):
             new_record = super(NkSalaryImportBatch, self).create([vals])
             created_records |= new_record
             
-
-            new_record._create_log(
-                action_type='batch_create',
-                description=f"Tạo mới Bảng Chính Sách lương: {new_record.name}",
-            )
         
         return created_records
 
@@ -152,10 +144,9 @@ class NkSalaryImportBatch(models.Model):
     @api.depends('log_ids')
     def _compute_log_counts(self):
         for batch in self:
-            batch.batch_log_count = len(batch.log_ids.filtered(lambda l: l.log_level == 'batch'))
             batch.record_log_count = len(batch.log_ids.filtered(lambda l: l.log_level == 'record'))
 
-    def _create_log(self, action_type, description, log_level='batch', policies_ids=None, employee_id=None, is_auto=False, trigger_batch_id=None):
+    def _create_log(self, action_type, description, log_level='batch', policies_ids=None, employee_id=None, trigger_batch_id=None):
         self.ensure_one()
         return self.env['nk.salary.policies.log'].create({
             'batch_id': self.id,
@@ -164,24 +155,26 @@ class NkSalaryImportBatch(models.Model):
             'employee_id': employee_id,
             'log_level': log_level,
             'action_type': action_type,
-            'description': description,
-            'is_auto': is_auto,
+            'description': description,          
             'trigger_batch_id': trigger_batch_id,
         })
     
     def action_view_logs(self):
-        
+        """Button 'Lịch sử thao tác' - Mở list nhật ký nhân viên"""
         self.ensure_one()
-        
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Lịch sử - %s') % self.name,
+            'name': f'Nhật ký - {self.name}',
             'res_model': 'nk.salary.policies.log',
-            'view_mode': 'list', 
-            'domain': [('batch_id', '=', self.id)],
+            'view_mode': 'list',
+            'domain': [
+                ('batch_id', '=', self.id),
+                ('log_level', '=', 'record')
+            ],
             'context': {
-                'default_batch_id': self.id,
-                'default_company_id': self.company_id.id,
+                'create': False,
+                'edit': False,
+                'delete': False,
             },
             'target': 'current',
         }
@@ -218,8 +211,6 @@ class NkSalaryImportBatch(models.Model):
     
     def action_view_policies(self):
         self.ensure_one()
-        
-
         if not self.list_view_id and self.dynamic_field_names:
             field_list = [f.strip() for f in self.dynamic_field_names.split(',') if f.strip()]
             if field_list:
@@ -277,11 +268,10 @@ class NkSalaryImportBatch(models.Model):
                     for old_policies in old_policies:
                         old_policies.batch_ref_id._create_log(  
                             action_type='policies_state_change',
-                            description=f"policies của NV {employee.name} tự động chuyển sang 'used' do Batch '{rec.name}' được áp dụng",
+                            description=f"Chính Sách Lương  của NV {employee.name} tự động chuyển sang 'used' do Batch '{rec.name}' được áp dụng",
                             log_level='record',
                             policies_ids=old_policies.id,
                             employee_id=employee.id,
-                            is_auto=True,
                             trigger_batch_id=rec.id,
                         )
                     affected_batches.update(old_policies.mapped('batch_ref_id').ids)
@@ -290,17 +280,12 @@ class NkSalaryImportBatch(models.Model):
                 'effective_date': fields.Date.today(),
             })
             current_policies.write({'state': 'in_use'})
-            rec._create_log(
-                action_type='batch_approve',
-                description=f"Áp dụng Bảng Chính Sách lương: {rec.name} - {rec.total_records} nhân viên",
-            )
             if affected_batches:
                 self._auto_close_completed_batches(list(affected_batches))
         
         return {'type': 'ir.actions.client', 'tag': 'reload'}    
 
     def _auto_close_completed_batches(self, batch_ids):
-
         batches_to_check = self.browse(batch_ids)
         
         for batch in batches_to_check:
@@ -309,14 +294,13 @@ class NkSalaryImportBatch(models.Model):
             total_policies = len(batch.policies_ids)
             used_policies = len(batch.policies_ids.filtered(lambda p: p.state == 'used'))
             if total_policies > 0 and used_policies == total_policies:
-
                 batch.write({
                     'state': 'used',
                     'expiration_date': fields.Date.today(),
                 })
+
     
     def action_end_batch(self):
-
         for rec in self:
             if rec.state != 'in_use':
                 raise UserError(_("Chỉ có thể kết thúc Bảng Chính Sách lương đang sử dụng!"))
@@ -326,10 +310,7 @@ class NkSalaryImportBatch(models.Model):
                 'state': 'used',
                 'expiration_date': fields.Date.today(),
             })
-        rec._create_log(
-            action_type='batch_end',
-            description=f"Kết thúc batch: {rec.name}",
-        )
+
         return {'type': 'ir.actions.client', 'tag': 'reload'}
     
     
@@ -444,90 +425,90 @@ class NkSalaryImportBatch(models.Model):
         
 
 
-    def write(self, vals):
+    # def write(self, vals):
         
-        LogModel = self.env['nk.salary.policies.log']
+    #     LogModel = self.env['nk.salary.policies.log']
         
-        for rec in self:
-            old_values = {}
-            for field_name in vals.keys():
-                if field_name in ['write_date', 'write_uid', '__last_update']:
-                    continue
+    #     for rec in self:
+    #         old_values = {}
+    #         for field_name in vals.keys():
+    #             if field_name in ['write_date', 'write_uid', '__last_update','activated_date']:
+    #                 continue
                 
-                field = self._fields.get(field_name)
-                if not field:
-                    continue
+    #             field = self._fields.get(field_name)
+    #             if not field:
+    #                 continue
                 
-                old_val = rec[field_name]
-                if old_val is False or old_val is None:
-                    old_values[field_name] = ''
-                elif field.type == 'many2one':
-                    old_values[field_name] = old_val.display_name if old_val else ''
-                elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
-                    old_values[field_name] = self._clean_number_str(old_val) if old_val else ''
-                else:
-                    if field_name == 'dynamic_field_names' and old_val:
-                        old_values[field_name] = rec._format_field_names_for_log(old_val)
-                    else:
-                        old_values[field_name] = str(old_val) if old_val else ''
+    #             old_val = rec[field_name]
+    #             if old_val is False or old_val is None:
+    #                 old_values[field_name] = ''
+    #             elif field.type == 'many2one':
+    #                 old_values[field_name] = old_val.display_name if old_val else ''
+    #             elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
+    #                 old_values[field_name] = self._clean_number_str(old_val) if old_val else ''
+    #             else:
+    #                 if field_name == 'dynamic_field_names' and old_val:
+    #                     old_values[field_name] = rec._format_field_names_for_log(old_val)
+    #                 else:
+    #                     old_values[field_name] = str(old_val) if old_val else ''
             
-            result = super(NkSalaryImportBatch, rec).write(vals)
+    #         result = super(NkSalaryImportBatch, rec).write(vals)
             
-            for field_name, old_val in old_values.items():
-                new_val = rec[field_name]
+    #         for field_name, old_val in old_values.items():
+    #             new_val = rec[field_name]
                 
-                field = self._fields.get(field_name)
-                if new_val is False or new_val is None:
-                    new_val_str = ''
-                elif field.type == 'many2one':
-                    new_val_str = new_val.display_name if new_val else ''
-                elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
-                    new_val_str = self._clean_number_str(new_val) if new_val else ''
-                else:
-                    if field_name == 'dynamic_field_names' and new_val:
-                        new_val_str = rec._format_field_names_for_log(new_val)
-                    else:
-                        new_val_str = str(new_val) if new_val else ''
+    #             field = self._fields.get(field_name)
+    #             if new_val is False or new_val is None:
+    #                 new_val_str = ''
+    #             elif field.type == 'many2one':
+    #                 new_val_str = new_val.display_name if new_val else ''
+    #             elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
+    #                 new_val_str = self._clean_number_str(new_val) if new_val else ''
+    #             else:
+    #                 if field_name == 'dynamic_field_names' and new_val:
+    #                     new_val_str = rec._format_field_names_for_log(new_val)
+    #                 else:
+    #                     new_val_str = str(new_val) if new_val else ''
 
-                old_val_str = str(old_val) if old_val else ''
-                if old_val_str == new_val_str:
-                    continue
-                if field_name == 'state':
-                    action_type = 'batch_state_change'
-                    state_labels = dict(self._fields['state'].selection)
-                    old_display = state_labels.get(old_val_str, old_val_str)
-                    new_display = state_labels.get(new_val_str, new_val_str)
-                    description = f"Trạng thái Bảng Chính Sách lương thay đổi: {old_display or '(trống)'} → {new_display or '(trống)'}"
-                else:
-                    action_type = 'batch_field_change'
-                    old_display = old_val_str
-                    new_display = new_val_str
-                    if field_name.startswith('x_'):
-                        configs = self.env["nk.salary.policies.field.config"].get_effective_fields(
-                            company=rec.company_id,
-                            user=self.env.user
-                        )
-                        config = next((c for c in configs if c.excel_name == field_name), None)
-                        field_label = config.display_name if config else field.string or field_name
-                    else:
-                        field_label = field.string or field_name
+    #             old_val_str = str(old_val) if old_val else ''
+    #             if old_val_str == new_val_str:
+    #                 continue
+    #             if field_name == 'state':
+    #                 action_type = 'batch_state_change'
+    #                 state_labels = dict(self._fields['state'].selection)
+    #                 old_display = state_labels.get(old_val_str, old_val_str)
+    #                 new_display = state_labels.get(new_val_str, new_val_str)
+    #                 description = f"Trạng thái Bảng Chính Sách lương thay đổi: {old_display or '(trống)'} → {new_display or '(trống)'}"
+    #             else:
+    #                 action_type = 'batch_field_change'
+    #                 old_display = old_val_str
+    #                 new_display = new_val_str
+    #                 if field_name.startswith('x_'):
+    #                     configs = self.env["nk.salary.policies.field.config"].get_effective_fields(
+    #                         company=rec.company_id,
+    #                         user=self.env.user
+    #                     )
+    #                     config = next((c for c in configs if c.excel_name == field_name), None)
+    #                     field_label = config.display_name if config else field.string or field_name
+    #                 else:
+    #                     field_label = field.string or field_name
                     
-                    description = f"Trường '{field_label}' thay đổi: {old_display or '(trống)'} → {new_display or '(trống)'}"
+    #                 description = f"Trường '{field_label}' thay đổi: {old_display or '(trống)'} → {new_display or '(trống)'}"
                 
-                LogModel.create({
-                    'batch_id': rec.id,
-                    'policies_ids': False,
-                    'company_id': rec.company_id.id,
-                    'employee_id': False,
-                    'log_level': 'batch',
-                    'action_type': action_type,
-                    'field_name': field_name,
-                    'old_value': old_display,
-                    'new_value': new_display,
-                    'description': description,
-                })
+    #             LogModel.create({
+    #                 'batch_id': rec.id,
+    #                 'policies_ids': False,
+    #                 'company_id': rec.company_id.id,
+    #                 'employee_id': False,
+    #                 'log_level': 'batch',
+    #                 'action_type': action_type,
+    #                 'field_name': field_name,
+    #                 'old_value': old_display,
+    #                 'new_value': new_display,
+    #                 'description': description,
+    #             })
         
-        return True
+    #     return True
 
     def _clean_number_str(self, value):
         
@@ -542,22 +523,27 @@ class NkSalaryImportBatch(models.Model):
 
 
     def _format_field_names_for_log(self, field_names_str):
-
+        """Convert technical_name (x_...) → excel_name (display name)"""
         if not field_names_str:
             return ''
         
-        excel_names = [f.strip() for f in field_names_str.split(',') if f.strip()]
+        # Đây là technical_name: x_luong_co_ban, x_chuyen_can...
+        tech_names = [f.strip() for f in field_names_str.split(',') if f.strip()]
         
-        if not excel_names:
+        if not tech_names:
             return ''
+        
         configs = self.env["nk.salary.policies.field.config"].get_effective_fields(
             company=self.company_id,
             user=self.env.user
         )
-        config_map = {c.excel_name: c.display_name for c in configs if c.excel_name}
+        
+        # Map: technical_name → excel_name
+        config_map = {c.technical_name: c.excel_name for c in configs if c.technical_name}
+        
         display_names = []
-        for tech_name in excel_names:
-            display_name = config_map.get(tech_name, tech_name)
-            display_names.append(display_name)
+        for tech_name in tech_names:
+            excel_name = config_map.get(tech_name, tech_name)  # Nếu không tìm thấy thì giữ nguyên
+            display_names.append(excel_name)
         
         return ", ".join(display_names)

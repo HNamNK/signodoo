@@ -5,7 +5,7 @@ class NkSalaryPolicies(models.Model):
     _name = "nk.salary.policies"
     _description = "Employee Salary Policies"
     _rec_name = "employee_id"
-    _order = "id desc"
+    _order = "id asc"
     _check_company_auto = True
     
     
@@ -120,7 +120,7 @@ class NkSalaryPolicies(models.Model):
                     vals['activated_date'] = fields.Datetime.now()
 
             for field_name in vals.keys():
-                if field_name in ['write_date', 'write_uid', '__last_update']:
+                if field_name in ['write_date', 'write_uid', '__last_update', 'activated_date']:
                     continue
                 
                 field = self._fields.get(field_name)
@@ -172,7 +172,7 @@ class NkSalaryPolicies(models.Model):
                             company=rec.company_id,
                             user=self.env.user
                         )
-                        config = next((c for c in configs if c.technical_name == field_name), None)
+                        config = next((c for c in configs if c.excel_name == field_name), None)
                         field_label = config.excel_name if config else field.string or field_name
                     else:
                         field_label = field.string or field_name
@@ -385,9 +385,5 @@ class NkSalaryPolicies(models.Model):
         if imported_fields:
             batch.write({'dynamic_field_names': ",".join(imported_fields)})
         
-        batch._create_log(
-            action_type='batch_import',
-            description=f"Import thành công {len(created_ids)} nhân viên - {len(imported_fields)} trường dữ liệu",
-        )
         
         return result

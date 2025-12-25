@@ -3,12 +3,14 @@ from odoo.exceptions import UserError
 from odoo import SUPERUSER_ID
 import unicodedata
 import re
+from markupsafe import Markup
 
 class NkSalaryPoliciesFieldConfig(models.Model):
     _name = "nk.salary.policies.field.config"
     _description = "Cấu hình Trường Chính sách Lương"
     _order = "create_date desc, id"
     _rec_name = "excel_name"
+    _inherit = ['mail.thread']
 
     excel_name = fields.Char("Tên cột Excel", required=True,
                              help="Không được chứa dấu cách. Người dùng KHÔNG nhập tiền tố 'x_'.")
@@ -26,7 +28,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         ('integer', "Số nguyên"),
         ('date', "Ngày"),
         ('boolean', 'Đúng/Sai'),
-    ], string="Loại dữ liệu", required=True, default="float")
+    ], string="Loại dữ liệu", required=True, default="float" )
 
     company_ids = fields.Many2many(
         "res.company", 
@@ -49,6 +51,9 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         default=False,
         help="Nếu bật, field này không được để trống khi import Excel"
     )
+
+
+    
     def _is_admin(self):
         """Kiểm tra user có quyền Administrator không"""
         return self.env.user.has_group('base.group_system')
@@ -58,6 +63,39 @@ class NkSalaryPoliciesFieldConfig(models.Model):
     def _compute_scope_display(self):
         for r in self:
             r.scope_display = 'global' if not r.company_ids else 'company'
+
+
+    @api.onchange('excel_name')
+    def _onchange_excel_name(self):
+        """Tính technical_name ngay khi user gõ xong excel_name"""
+        if self.excel_name:
+            try:
+                normalized = self._normalize_to_technical_name(self.excel_name.strip())
+                self.technical_name = f"x_{normalized}"
+                
+                # Kiểm tra trùng technical_name (nếu đang tạo mới)
+                if not self.id:
+                    existing = self.search([('technical_name', '=', self.technical_name)], limit=1)
+                    if existing:
+                        return {
+                            'warning': {
+                                'title': 'Cảnh báo trùng lặp!',
+                                'message': f'Technical name "{self.technical_name}" đã tồn tại!\n'
+                                        f'Excel name "{self.excel_name}" tạo ra technical name trùng với field "{existing.excel_name}".\n'
+                                        f'Vui lòng đặt tên Excel khác.'
+                            }
+                        }
+            except UserError as e:
+                # Nếu excel_name không hợp lệ, để technical_name trống
+                self.technical_name = False
+                return {
+                    'warning': {
+                        'title': 'Tên không hợp lệ!',
+                        'message': str(e)
+                    }
+                }
+        else:
+            self.technical_name = False
 
     @api.depends('excel_name')
     def _compute_technical_name(self):
@@ -136,16 +174,48 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         
         return normalized
 
+
     @api.model_create_multi
     def create(self, vals_list):
         if not self._is_admin():
             raise UserError(_("Chỉ Administrator mới được tạo cấu hình field."))
+        
         rec = super().create(vals_list)
         rec.materialize_physical_field()
+        
+        for r in rec:
+            scope = 'Dùng chung toàn hệ thống' if not r.company_ids else ', '.join(r.company_ids.mapped("name"))
+            
+            # ✅ Dùng Markup
+            message = Markup(f"""
+                <p><strong>✅ Tạo thành công field: {r.excel_name}</strong></p>
+                <p>• Tên kỹ thuật: <code>{r.technical_name}</code><br/>
+                • Loại dữ liệu: {dict(r._fields['field_type'].selection).get(r.field_type)}<br/>
+                • Phạm vi: {scope}<br/>
+                • Bắt buộc import: {'Có' if r.required_on_import else 'Không'}</p>
+            """)
+            
+            r.message_post(
+                body=message,
+                message_type='notification',
+                subtype_xmlid='mail.mt_note',
+            )
+        
         return rec
 
     def write(self, vals):
+        # ✅ Lưu giá trị cũ để so sánh
+        old_values = {}
+        for rec in self:
+            old_values[rec.id] = {
+                'excel_name': rec.excel_name,
+                'field_type': rec.field_type,
+                'company_ids': rec.company_ids.ids,
+                'required_on_import': rec.required_on_import,
+            }
+        
         res = super().write(vals)
+        
         if 'excel_name' in vals:  
             model = self.env['ir.model'].search([('model', '=', 'nk.salary.policies')], limit=1)
             IrFields = self.env['ir.model.fields']
@@ -162,6 +232,45 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         if self._is_admin() or self.env.context.get('materialize_now'):
             self.filtered(lambda r: not r.is_materialized).materialize_physical_field()
         
+        # ✅ Ghi log note khi cập nhật
+        for rec in self:
+            old = old_values.get(rec.id, {})
+            changes = []
+            
+            if 'excel_name' in vals and old.get('excel_name') != rec.excel_name:
+                changes.append(f"Tên hiển thị: {old.get('excel_name')} → {rec.excel_name}")
+            
+            if 'field_type' in vals and old.get('field_type') != rec.field_type:
+                old_type = dict(rec._fields['field_type'].selection).get(old.get('field_type'))
+                new_type = dict(rec._fields['field_type'].selection).get(rec.field_type)
+                changes.append(f"Loại dữ liệu: {old_type} → {new_type}")
+            
+            if 'company_ids' in vals:
+                old_scope = 'Dùng chung toàn hệ thống' if not old.get('company_ids') else 'Theo công ty'
+                new_scope = 'Dùng chung toàn hệ thống' if not rec.company_ids else ', '.join(rec.company_ids.mapped("name"))
+                if old_scope != new_scope:
+                    changes.append(f"Phạm vi: {old_scope} → {new_scope}")
+            
+            if 'required_on_import' in vals and old.get('required_on_import') != rec.required_on_import:
+                old_req = 'Có' if old.get('required_on_import') else 'Không'
+                new_req = 'Có' if rec.required_on_import else 'Không'
+                changes.append(f"Bắt buộc import: {old_req} → {new_req}")
+            
+            # ✅ Nếu có thay đổi thì ghi log
+            if changes:
+                from markupsafe import Markup
+                message = Markup(f"""
+                    <p><strong>🔄 Cập nhật field: {rec.excel_name}</strong></p>
+                    <p>• Tên kỹ thuật: <code>{rec.technical_name}</code><br/>
+                    {'<br/>'.join(['• ' + change for change in changes])}</p>
+                """)
+                
+                rec.message_post(
+                    body=message,
+                    message_type='notification',
+                    subtype_xmlid='mail.mt_note',
+                )
+        
         return res
 
     def unlink(self):
@@ -170,7 +279,6 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         
         for rec in self:
             if rec.is_materialized and rec.technical_name:
-                # Kiểm tra xem field có dữ liệu không
                 has_data = self.env['nk.salary.policies'].search_count([
                     (rec.technical_name, '!=', False),
                     (rec.technical_name, '!=', 0),
@@ -184,7 +292,6 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                         f"Bạn có chắc chắn muốn xóa?"
                     )
                 
-                # Bước 1: Tìm tất cả views chứa field này
                 views_with_field = IrUiView.search([
                     ('model', '=', 'nk.salary.policies'),
                     ('type', '=', 'list'),
@@ -192,7 +299,6 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                 ])
                 
                 if views_with_field:
-                    # Xóa reference trong batch trước khi xóa view
                     batches = self.env['nk.salary.policies.batch'].search([
                         ('list_view_id', 'in', views_with_field.ids)
                     ])
@@ -200,10 +306,8 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                     if batches:
                         batches.write({'list_view_id': False})
                     
-                    # Xóa tất cả views chứa field này
                     views_with_field.unlink()
                 
-                # Bước 2: Xóa ir.model.fields
                 model = self.env['ir.model'].search([('model', '=', 'nk.salary.policies')], limit=1)
                 if model:
                     field_to_delete = IrModelFields.search([
@@ -215,13 +319,13 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                     if field_to_delete:
                         field_to_delete.unlink()
 
-        # Bước 3: Xóa config record
         res = super().unlink()
         
-        # Bước 4: Refresh registry để Odoo cập nhật model
         self._refresh_registry()
         
         return res
+
+
     @api.model
     def get_effective_fields(self, company=None, user=None):
 
@@ -251,11 +355,18 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         
         for rec in self:
             ttype = type_map.get(rec.field_type)
-            field_name = rec.technical_name
-            if not field_name:
+            
+            # ✅ SỬA: Dùng technical_name thay vì excel_name
+            if not rec.technical_name:
                 continue
 
-            self._ensure_field_exists(model_policies, field_name, ttype, rec.excel_name)  # ← Đổi
+            # ✅ SỬA: Truyền technical_name (có x_) vào field_name
+            self._ensure_field_exists(
+                model_policies, 
+                rec.technical_name,  # ← Thay đổi từ rec.excel_name
+                ttype, 
+                rec.excel_name  # Label vẫn dùng excel_name
+            )
             rec.is_materialized = True
 
         self._refresh_registry()

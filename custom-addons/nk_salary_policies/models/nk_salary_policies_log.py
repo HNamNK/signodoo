@@ -53,21 +53,15 @@ class NkSalarypoliciesLog(models.Model):
     ], string='Cấp độ', required=True, index=True)
     
     action_type = fields.Selection([
-        ('batch_create', 'Tạo Bảng Chính Sách lương mới'),
-        ('batch_import', 'Nhập dữ liệu từ Excel'),
-        ('batch_approve', 'Phê duyệt Bảng Chính Sách lương'),
-        ('batch_end', 'Hoàn tất Bảng Chính Sách lương'),
-        ('batch_state_change', 'Cập nhật trạng thái Bảng Chính Sách lương'),
-        ('batch_field_change', 'Cập nhật thông tin Bảng Chính Sách lương'),
-        ('policies_state_change', 'Thay đổi trạng thái Chính sách lương'),
-        ('policies_field_change', 'Cập nhật thông tin Chính sách lương'),
+
+        ('policies_state_change', 'Thay đổi trạng thái '),
+        ('policies_field_change', 'Cập nhật thông tin '),
     ], string='Loại thao tác', required=True)
     
     field_name = fields.Char(string='Tên trường')
     old_value = fields.Text(string='Giá trị cũ')
     new_value = fields.Text(string='Giá trị mới')
     
-    is_auto = fields.Boolean(string='Tự động', default=False)
     trigger_batch_id = fields.Many2one(
         'nk.salary.policies.batch',
         string="Do Bảng Chính Sách",
@@ -75,6 +69,13 @@ class NkSalarypoliciesLog(models.Model):
     
     description = fields.Text(string='Chi tiết')
     
+    employee_identification = fields.Char(
+        related='employee_id.identification',
+        string='Số CCCD',
+        store=True,
+        readonly=True,
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         

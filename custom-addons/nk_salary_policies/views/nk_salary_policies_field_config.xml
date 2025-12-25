@@ -5,12 +5,15 @@
             <field name="name">nk.salary.policies.field.config.list</field>
             <field name="model">nk.salary.policies.field.config</field>
             <field name="arch" type="xml">
-                <list string="Cấu hình Trường Chính sách Lương" >
+                <list string="Cấu hình Trường Chính sách Lương" 
+                    import="false" 
+                    export_xlsx="false">
                     <field name="excel_name" string="Tên trong Excel"/>
                     <field name="technical_name" string="Tên kỹ thuật" optional="show"/>
                     <field name="field_type" string="Loại dữ liệu"/>
                     <field name="company_ids" widget="many2many_tags"/>
                     <field name="scope_display"/>
+                    <field name="required_on_import" string="Bắt buộc import" optional="show"/>
                 </list>
             </field>
         </record>
@@ -19,7 +22,7 @@
             <field name="name">nk.salary.policies.field.config.form</field>
             <field name="model">nk.salary.policies.field.config</field>
             <field name="arch" type="xml">
-                <form string="Cấu hình Trường Chính sách Lương">
+                <form string="Cấu hình Trường Chính sách Lương" duplicate="0" >
                     <sheet>
                         <group>
                             <field name="excel_name" 
@@ -53,6 +56,10 @@
                             readonly="1"/>
                         </group>
                     </sheet>
+
+                    <chatter/>
+
+
                 </form>
             </field>
         </record>
@@ -61,6 +68,8 @@
             <field name="name">Cấu hình Trường Chính sách Lương</field>
             <field name="res_model">nk.salary.policies.field.config</field>
             <field name="view_mode">list,form</field>
+
+            
         </record>
         
     </data>

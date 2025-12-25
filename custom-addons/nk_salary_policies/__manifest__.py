@@ -2,7 +2,7 @@
     'name': 'NK Salary Policies',
     'version': '1.0',
     'summary': 'Add Citizen ID to HR Employee',
-    'depends': ['hr', 'hr_contract', 'hr_employee','web'],
+    'depends': ['hr', 'hr_contract', 'hr_employee','web','mail'],
     'data': [
         'security/salary_policies_security.xml',
         'security/ir.model.access.csv',
