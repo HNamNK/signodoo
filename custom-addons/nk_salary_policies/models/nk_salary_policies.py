@@ -82,14 +82,21 @@ class NkSalaryPolicies(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+
             if not vals.get("company_id"):
-                vals["company_id"] = self.env.company.id
+                batch_id = vals.get("batch_ref_id") or self.env.context.get('default_batch_ref_id')
+                if batch_id:
+                    batch = self.env['nk.salary.policies.batch'].browse(batch_id)
+                    vals["company_id"] = batch.company_id.id
+                else:
+                    vals["company_id"] = self.env.company.id
             
             if not vals.get("state"):
                 vals["state"] = "draft"
             
             if not vals.get("employee_id") and vals.get("unique_personal_id"):
                 cccd = str(vals["unique_personal_id"]).strip()
+
                 employee = self.env["hr.employee"].search(
                     [("identification", "=", cccd),
                     ("company_id", "=", vals["company_id"])],
@@ -129,7 +136,7 @@ class NkSalaryPolicies(models.Model):
                 
                 old_val = rec[field_name]
                 
-                # ✅ FIX: Dùng display_name cho tất cả many2one
+
                 if field.type == 'many2one':
                     old_values[field_name] = old_val.display_name if old_val else ''
                 elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
@@ -144,7 +151,7 @@ class NkSalaryPolicies(models.Model):
                 
                 field = self._fields.get(field_name)
                 
-                # ✅ FIX: Dùng display_name cho tất cả many2one
+
                 if field.type == 'many2one':
                     new_val_str = new_val.display_name if new_val else ''
                 elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
@@ -212,7 +219,7 @@ class NkSalaryPolicies(models.Model):
         """
         Override load để validate và xử lý import từ Excel
         """
-        # Validation batch
+
         batch_id = self.env.context.get('default_batch_ref_id')
         if not batch_id:
             raise UserError(_("Vui lòng import từ Batch Form!"))
@@ -377,6 +384,7 @@ class NkSalaryPolicies(models.Model):
         
         self.browse(created_ids).write({
             'batch_ref_id': batch.id,
+            'company_id': batch.company_id.id,
             'state': 'draft'
         })
         
@@ -384,6 +392,5 @@ class NkSalaryPolicies(models.Model):
         
         if imported_fields:
             batch.write({'dynamic_field_names': ",".join(imported_fields)})
-        
-        
+                
         return result

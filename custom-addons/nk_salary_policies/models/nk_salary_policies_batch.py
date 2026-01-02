@@ -424,91 +424,20 @@ class NkSalaryImportBatch(models.Model):
         self.write({'list_view_id': view.id})
         
 
+    def write(self, vals):
+        for rec in self:
+            # Lock sau khi đã import
+            if rec.total_records > 0:
+                protected = ['company_id', 'name']
+                attempting = [f for f in protected if f in vals]
+                if attempting:
+                    raise UserError(
+                        _("⚠️ Không thể sửa %s sau khi đã import!\n"
+                        "Batch có %d records.") 
+                        % (', '.join(attempting), rec.total_records)
+                    )
+        return super().write(vals)
 
-    # def write(self, vals):
-        
-    #     LogModel = self.env['nk.salary.policies.log']
-        
-    #     for rec in self:
-    #         old_values = {}
-    #         for field_name in vals.keys():
-    #             if field_name in ['write_date', 'write_uid', '__last_update','activated_date']:
-    #                 continue
-                
-    #             field = self._fields.get(field_name)
-    #             if not field:
-    #                 continue
-                
-    #             old_val = rec[field_name]
-    #             if old_val is False or old_val is None:
-    #                 old_values[field_name] = ''
-    #             elif field.type == 'many2one':
-    #                 old_values[field_name] = old_val.display_name if old_val else ''
-    #             elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
-    #                 old_values[field_name] = self._clean_number_str(old_val) if old_val else ''
-    #             else:
-    #                 if field_name == 'dynamic_field_names' and old_val:
-    #                     old_values[field_name] = rec._format_field_names_for_log(old_val)
-    #                 else:
-    #                     old_values[field_name] = str(old_val) if old_val else ''
-            
-    #         result = super(NkSalaryImportBatch, rec).write(vals)
-            
-    #         for field_name, old_val in old_values.items():
-    #             new_val = rec[field_name]
-                
-    #             field = self._fields.get(field_name)
-    #             if new_val is False or new_val is None:
-    #                 new_val_str = ''
-    #             elif field.type == 'many2one':
-    #                 new_val_str = new_val.display_name if new_val else ''
-    #             elif field.type in ('selection', 'boolean', 'integer', 'float', 'monetary'):
-    #                 new_val_str = self._clean_number_str(new_val) if new_val else ''
-    #             else:
-    #                 if field_name == 'dynamic_field_names' and new_val:
-    #                     new_val_str = rec._format_field_names_for_log(new_val)
-    #                 else:
-    #                     new_val_str = str(new_val) if new_val else ''
-
-    #             old_val_str = str(old_val) if old_val else ''
-    #             if old_val_str == new_val_str:
-    #                 continue
-    #             if field_name == 'state':
-    #                 action_type = 'batch_state_change'
-    #                 state_labels = dict(self._fields['state'].selection)
-    #                 old_display = state_labels.get(old_val_str, old_val_str)
-    #                 new_display = state_labels.get(new_val_str, new_val_str)
-    #                 description = f"Trạng thái Bảng Chính Sách lương thay đổi: {old_display or '(trống)'} → {new_display or '(trống)'}"
-    #             else:
-    #                 action_type = 'batch_field_change'
-    #                 old_display = old_val_str
-    #                 new_display = new_val_str
-    #                 if field_name.startswith('x_'):
-    #                     configs = self.env["nk.salary.policies.field.config"].get_effective_fields(
-    #                         company=rec.company_id,
-    #                         user=self.env.user
-    #                     )
-    #                     config = next((c for c in configs if c.excel_name == field_name), None)
-    #                     field_label = config.display_name if config else field.string or field_name
-    #                 else:
-    #                     field_label = field.string or field_name
-                    
-    #                 description = f"Trường '{field_label}' thay đổi: {old_display or '(trống)'} → {new_display or '(trống)'}"
-                
-    #             LogModel.create({
-    #                 'batch_id': rec.id,
-    #                 'policies_ids': False,
-    #                 'company_id': rec.company_id.id,
-    #                 'employee_id': False,
-    #                 'log_level': 'batch',
-    #                 'action_type': action_type,
-    #                 'field_name': field_name,
-    #                 'old_value': old_display,
-    #                 'new_value': new_display,
-    #                 'description': description,
-    #             })
-        
-    #     return True
 
     def _clean_number_str(self, value):
         
@@ -527,7 +456,7 @@ class NkSalaryImportBatch(models.Model):
         if not field_names_str:
             return ''
         
-        # Đây là technical_name: x_luong_co_ban, x_chuyen_can...
+
         tech_names = [f.strip() for f in field_names_str.split(',') if f.strip()]
         
         if not tech_names:
@@ -538,12 +467,12 @@ class NkSalaryImportBatch(models.Model):
             user=self.env.user
         )
         
-        # Map: technical_name → excel_name
+
         config_map = {c.technical_name: c.excel_name for c in configs if c.technical_name}
         
         display_names = []
         for tech_name in tech_names:
-            excel_name = config_map.get(tech_name, tech_name)  # Nếu không tìm thấy thì giữ nguyên
+            excel_name = config_map.get(tech_name, tech_name)
             display_names.append(excel_name)
         
         return ", ".join(display_names)

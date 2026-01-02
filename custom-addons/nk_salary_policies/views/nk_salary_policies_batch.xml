@@ -9,7 +9,7 @@
             
                 <list
                  
-                        import="0"
+                import="0"
                     create="1" 
                     edit="1" 
                     delete="1" 
@@ -22,17 +22,17 @@
                     decoration-danger="state == 'used'"
                     class="nk_salary_policies_list">
                     
-                    <field name="company_id" 
-                           string="Công ty"
-                           readonly="state != 'draft'"
-                           options="{'no_create': True}"
-                           width="200px"/>
+                        <field name="company_id" 
+                        string="Công ty"
+                        readonly="total_records > 0" 
+                        options="{'no_create': True}"
+                        width="200px"/>
                     
                     <field name="name" 
                            string="Tên Chính Sách Lương" 
                            required="1"
                            readonly="state != 'draft'"
-                           width="300px"/>
+                           width="200px"/>
                     <field name="create_uid" 
                             string="Người tạo" 
                             readonly="1"
@@ -42,19 +42,19 @@
                     <field name="create_date" 
                            string="Ngày tạo" 
                            readonly="1"
-                           width="150px"/>
+                           width="100px"/>
                     
                     <field name="effective_date" 
                            string="Ngày áp dụng" 
                            readonly="1"
                            optional="show"
-                           width="150px"/>
+                           width="100px"/>
                     
                     <field name="expiration_date" 
                            string="Ngày kết thúc" 
                            readonly="1"
                            optional="show"
-                           width="150px"/>
+                           width="100px"/>
                     
                     <field name="total_records" 
                            string="Tổng NV" 
@@ -158,11 +158,8 @@
             <field name="view_id" ref="view_nk_salary_policies_batch_list"/>
             <field name="search_view_id" ref="view_nk_salary_policies_batch_search"/>
             <field name="target">current</field>
-            <field name="domain">[('company_id', 'in', allowed_company_ids)]</field>
-            <field name="context">{
-                'default_company_id': allowed_company_ids[0] if allowed_company_ids else company_id,
-                
-            }</field>
+            <field name="domain"></field>
+            <field name="context"></field>
         </record>
     </data>
 </odoo>

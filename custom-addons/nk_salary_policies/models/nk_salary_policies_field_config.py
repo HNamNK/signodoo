@@ -73,7 +73,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                 normalized = self._normalize_to_technical_name(self.excel_name.strip())
                 self.technical_name = f"x_{normalized}"
                 
-                # Kiểm tra trùng technical_name (nếu đang tạo mới)
+
                 if not self.id:
                     existing = self.search([('technical_name', '=', self.technical_name)], limit=1)
                     if existing:
@@ -86,7 +86,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                             }
                         }
             except UserError as e:
-                # Nếu excel_name không hợp lệ, để technical_name trống
+
                 self.technical_name = False
                 return {
                     'warning': {
@@ -105,7 +105,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                     normalized = r._normalize_to_technical_name(r.excel_name.strip())
                     r.technical_name = f"x_{normalized}"
                 except UserError:
-                    # Re-raise để hiển thị lỗi cho user
+
                     raise
             else:
                 r.technical_name = False
@@ -186,7 +186,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         for r in rec:
             scope = 'Dùng chung toàn hệ thống' if not r.company_ids else ', '.join(r.company_ids.mapped("name"))
             
-            # ✅ Dùng Markup
+
             message = Markup(f"""
                 <p><strong>✅ Tạo thành công field: {r.excel_name}</strong></p>
                 <p>• Tên kỹ thuật: <code>{r.technical_name}</code><br/>
@@ -204,7 +204,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         return rec
 
     def write(self, vals):
-        # ✅ Lưu giá trị cũ để so sánh
+
         old_values = {}
         for rec in self:
             old_values[rec.id] = {
@@ -232,7 +232,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         if self._is_admin() or self.env.context.get('materialize_now'):
             self.filtered(lambda r: not r.is_materialized).materialize_physical_field()
         
-        # ✅ Ghi log note khi cập nhật
+
         for rec in self:
             old = old_values.get(rec.id, {})
             changes = []
@@ -256,7 +256,7 @@ class NkSalaryPoliciesFieldConfig(models.Model):
                 new_req = 'Có' if rec.required_on_import else 'Không'
                 changes.append(f"Bắt buộc import: {old_req} → {new_req}")
             
-            # ✅ Nếu có thay đổi thì ghi log
+
             if changes:
                 from markupsafe import Markup
                 message = Markup(f"""
@@ -356,16 +356,16 @@ class NkSalaryPoliciesFieldConfig(models.Model):
         for rec in self:
             ttype = type_map.get(rec.field_type)
             
-            # ✅ SỬA: Dùng technical_name thay vì excel_name
+
             if not rec.technical_name:
                 continue
 
-            # ✅ SỬA: Truyền technical_name (có x_) vào field_name
+
             self._ensure_field_exists(
                 model_policies, 
-                rec.technical_name,  # ← Thay đổi từ rec.excel_name
+                rec.technical_name,
                 ttype, 
-                rec.excel_name  # Label vẫn dùng excel_name
+                rec.excel_name
             )
             rec.is_materialized = True
 

@@ -6,7 +6,7 @@
     'data': [
         'security/salary_policies_security.xml',
         'security/ir.model.access.csv',
-        'views/nk_salary_policies.xml',
+        # 'views/nk_salary_policies.xml',
         'views/nk_salary_policies_field_config.xml',
         'views/nk_salary_policies_batch.xml',
         'views/nk_salary_policies_log.xml',
